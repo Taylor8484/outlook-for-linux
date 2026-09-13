@@ -16,6 +16,7 @@ require("../appConfiguration");
 const ConnectionManager = require("../connectionManager");
 const ssoPasswordPrefill = require("../ssoPasswordPrefill");
 const BrowserWindowManager = require("../mainAppWindow/browserWindowManager");
+const { isMailtoUri, mailtoToComposeUrl } = require("./mailtoLink");
 const os = require("node:os");
 const path = require("node:path");
 
@@ -446,6 +447,13 @@ exports.onAppReady = async function onAppReady(configGroup, profilesManager = nu
     config: config,
   });
 
+  // A mailto: link that launched the app opens a compose window next to the
+  // mailbox rather than replacing it.
+  const composeUrl = findComposeUrl(process.argv);
+  if (composeUrl) {
+    openComposeWindow(composeUrl);
+  }
+
   applyAppConfiguration(config, window);
 };
 
@@ -496,6 +504,11 @@ exports.onAppSecondInstance = function onAppSecondInstance(event, args) {
     }
 
     restoreWindow();
+
+    const composeUrl = findComposeUrl(args);
+    if (composeUrl) {
+      openComposeWindow(composeUrl);
+    }
   }
 };
 
@@ -602,6 +615,60 @@ function processArgs(args) {
     }
   }
   return null;
+}
+
+/**
+ * Returns the Outlook compose deep link for the first mailto: argument, or
+ * null when there is none. Desktop environments pass a clicked mailto: link as
+ * an argument because the Linux packages declare x-scheme-handler/mailto.
+ *
+ * @param {string[]} args - Command line arguments to process
+ * @returns {string|null} Compose URL, or null if no mailto: argument was found
+ */
+function findComposeUrl(args) {
+  for (const arg of args) {
+    if (isMailtoUri(arg)) {
+      // The address, subject and body are user data: log only that one arrived.
+      console.debug("[MAILTO] mailto: argument received");
+      return mailtoToComposeUrl(arg, config.url);
+    }
+  }
+  return null;
+}
+
+/**
+ * Opens an Outlook compose deep link in its own window on the main session
+ * partition, so the user is already signed in. Outlook closes a deep-link
+ * compose page itself after sending, which must not take the mailbox window
+ * with it. The page needs no wrapper integration, so the window keeps
+ * Electron's hardened defaults, and links it opens go to the default browser.
+ *
+ * @param {string} url - Compose URL from mailtoToComposeUrl
+ */
+function openComposeWindow(url) {
+  const composeWindow = new BrowserWindow({
+    width: 960,
+    height: 760,
+    title: "New message - Outlook for Linux",
+    autoHideMenuBar: true,
+    icon: iconChooser ? nativeImage.createFromPath(iconChooser.getFile()) : undefined,
+    webPreferences: {
+      partition: config.partition,
+      spellcheck: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  composeWindow.webContents.setWindowOpenHandler((details) => {
+    openInBrowser(details);
+    return { action: "deny" };
+  });
+
+  composeWindow.loadURL(url, { userAgent: config.chromeUserAgent }).catch(() => {
+    console.debug("[MAILTO] compose navigation failed");
+  });
 }
 
 // Microsoft telemetry / beacon hosts that are not required for Teams to

@@ -90,6 +90,9 @@
       "packageCategory": "net",
       "executableName": "outlook-for-linux",
       "syncDesktopName": true,
+      "mimeTypes": [
+        "x-scheme-handler/mailto"
+      ],
       "synopsis": "Outlook for Linux",
       "description": "Unofficial Microsoft Outlook client for Linux using Electron. It uses the Web App and wraps it as a standalone application using Electron.",
       "executableArgs": [

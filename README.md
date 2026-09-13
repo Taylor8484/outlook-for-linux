@@ -16,7 +16,8 @@ standalone desktop application with Linux desktop integration. It is built on
 - **Multiple accounts** through separate profiles
 - **Desktop integration**: system notifications, download notifications, tray
   unread badge (support varies by desktop environment), global shortcuts,
-  spellcheck, and AppImage auto-update
+  spellcheck, `mailto:` links that open an Outlook compose window, and
+  AppImage auto-update
 - **Custom CSS** to restyle the web app
 - **Proxy and certificate** configuration for corporate networks
 - **Zoom** controls

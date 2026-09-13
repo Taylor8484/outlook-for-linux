@@ -120,6 +120,16 @@ Example basic configuration:
 
 See the [Configuration Guide](configuration.md) for all available options.
 
+### Open Email Links in Outlook for Linux
+
+The deb and rpm packages, and AppImages installed with a desktop entry, register the app for `mailto:` links, but it never makes itself the default handler. To have clicked email links open an Outlook compose window with the recipient, subject and body filled in:
+
+```bash
+xdg-mime default outlook-for-linux.desktop x-scheme-handler/mailto
+```
+
+Check the current handler with `xdg-mime query default x-scheme-handler/mailto`. The compose window shares the main window's session, so you stay signed in.
+
 ## Command Line Options
 
 ### Basic Usage
