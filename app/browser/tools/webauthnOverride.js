@@ -22,7 +22,8 @@ function init(config, ipcRenderer) {
   }
 
   if (!config?.auth?.webauthn?.enabled) {
-    console.debug("[WEBAUTHN] Skipping: auth.webauthn.enabled is not true");
+    console.debug("[WEBAUTHN] auth.webauthn.enabled is not true: failing passkey prompts fast");
+    installUnavailableFallback();
     return;
   }
 
@@ -160,6 +161,48 @@ function init(config, ipcRenderer) {
 
   console.info("[WEBAUTHN] navigator.credentials patched for hardware security key support");
   console.info("[WEBAUTHN] postMessage relay registered for subframe support");
+}
+
+/**
+ * Electron has no WebAuthn prompt or platform authenticator on Linux, so a
+ * native navigator.credentials.get()/create() for a publicKey credential never
+ * settles, even past the page's own timeout. Microsoft's sign-in page then spins
+ * forever on "Face, fingerprint, PIN or security key" for accounts whose default
+ * method is a passkey or Windows Hello. With hardware key support off, reject
+ * those calls the way a cancelled browser prompt would, so the page offers
+ * another sign-in method. Conditional mediation (passkey autofill) stays native:
+ * it is meant to stay pending until the user picks a credential.
+ */
+function installUnavailableFallback() {
+  if (!navigator.credentials?.create || !navigator.credentials?.get) {
+    return;
+  }
+
+  const originalCreate = navigator.credentials.create.bind(navigator.credentials);
+  const originalGet = navigator.credentials.get.bind(navigator.credentials);
+  const unavailable = () =>
+    Promise.reject(
+      new DOMException(
+        "Passkeys and security keys are not available (auth.webauthn.enabled is off)",
+        "NotAllowedError",
+      ),
+    );
+
+  navigator.credentials.get = (options) => {
+    if (!options?.publicKey || options.mediation === "conditional") {
+      return originalGet(options);
+    }
+    console.info("[WEBAUTHN] Rejecting credentials.get(): security key support is off");
+    return unavailable();
+  };
+
+  navigator.credentials.create = (options) => {
+    if (!options?.publicKey) {
+      return originalCreate(options);
+    }
+    console.info("[WEBAUTHN] Rejecting credentials.create(): security key support is off");
+    return unavailable();
+  };
 }
 
 /**

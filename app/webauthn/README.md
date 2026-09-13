@@ -48,6 +48,13 @@ paths) and restart. The allowlist gates two places, `index.js` and the
 postMessage relay in `app/browser/tools/webauthnOverride.js`; both build it from
 `originAllowlist.js`, so neither can drift.
 
+With `enabled` off (the default), nothing is routed to `fido2-tools`. Instead
+`webauthnOverride.js` rejects non-conditional `publicKey` requests immediately
+with `NotAllowedError`: Electron on Linux would otherwise leave them pending
+forever, and Microsoft's sign-in page would spin on "Face, fingerprint, PIN or
+security key" for accounts that default to a passkey. Conditional mediation
+(passkey autofill) is left to the native implementation.
+
 ## Reading a sign-in log
 
 Every ceremony logs a `[WEBAUTHN]` line at each step, so `grep WEBAUTHN` over a session log shows the whole flow. Four fields matter when a sign-in fails but the ceremony itself reports success:

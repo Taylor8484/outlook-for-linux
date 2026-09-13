@@ -239,6 +239,20 @@ in `ERR_CONNECTION_CLOSED` for the main frame.
 
 The app automatically strips report-only CSP headers from third-party sign-in pages. No configuration is needed; make sure you are running the latest release. If a provider still fails, [open an issue](https://github.com/Taylor8484/outlook-for-linux/issues) with the sign-in host name.
 
+#### Issue: Sign-in spins on "Face, fingerprint, PIN or security key"
+
+**Description:** After you enter your work or school email, the sign-in page shows "Face, fingerprint, PIN or security key" and keeps spinning. No password or other sign-in option appears.
+
+**Cause:** Your account's default sign-in method is a passkey, Windows Hello or a security key, so Microsoft's page asks the app for a WebAuthn credential. Electron has no passkey prompt on Linux, so unless security key support is enabled that request never finishes. From version 2.1.1 the app rejects such requests immediately while `auth.webauthn.enabled` is off, the same way a browser reports a cancelled prompt, so Microsoft offers your other sign-in methods instead.
+
+**Solutions/Workarounds:**
+
+1. Update to the latest release, then choose another sign-in method (for example the Microsoft Authenticator app or your password) when the page offers one.
+2. Change your default sign-in method in a web browser: open [mysignins.microsoft.com](https://mysignins.microsoft.com), go to **Security info**, and choose **Change default sign-in method**. Then press F5 in the app and sign in again.
+3. If you sign in with a hardware security key (YubiKey and similar), enable security key support as described in the next issue.
+
+Passkeys kept on a phone or in Windows Hello cannot be used from this app on Linux; use another method such as the Authenticator app, a password, or a hardware security key.
+
 #### Issue: Security Key (FIDO2 / WebAuthn) sign-in fails on Linux
 
 **Description:** When signing in with a hardware security key (YubiKey, SoloKeys, Nitrokey, Feitian, etc.) on Linux, the login page spins indefinitely, shows an error, or no PIN dialog appears.
