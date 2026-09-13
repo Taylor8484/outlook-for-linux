@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/Taylor8484/outlook-for-linux/compare/v2.1.0...v2.1.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* fail passkey prompts fast when security key support is off ([4dd4bbe](https://github.com/Taylor8484/outlook-for-linux/commit/4dd4bbebdef847bc6bc849a0030af8fd5e0ece2e))
+
 ## [2.1.0](https://github.com/Taylor8484/outlook-for-linux/compare/v2.0.0...v2.1.0) (2026-09-13)
 
 
