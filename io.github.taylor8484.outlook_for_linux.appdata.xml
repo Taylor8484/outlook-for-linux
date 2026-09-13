@@ -15,6 +15,15 @@
   <url type="bugtracker">https://github.com/Taylor8484/outlook-for-linux/issues</url>
   <launchable type="desktop-id">io.github.taylor8484.outlook_for_linux.desktop</launchable>
   <releases>
+    <release version="2.1.0" date="2026-09-13">
+      <description>
+        <ul>
+          <li>open mailto: links in an Outlook compose window</li>
+          <li>set desktopName so desktops match the window to its launcher</li>
+          <li>keep release-please green when no release PR is opened</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.0.0" date="2026-09-13">
       <description>
         <ul>

@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.1.0](https://github.com/Taylor8484/outlook-for-linux/compare/v2.0.0...v2.1.0) (2026-09-13)
+
+
+### Features
+
+* open mailto: links in an Outlook compose window ([1d8ca56](https://github.com/Taylor8484/outlook-for-linux/commit/1d8ca56706fbcc7f1a2d93250c8f4ebc2bf7b8b7))
+
+
+### Bug Fixes
+
+* set desktopName so desktops match the window to its launcher ([17ad6e3](https://github.com/Taylor8484/outlook-for-linux/commit/17ad6e3b2a0b38635bee0d2d23e32d95234d7a08))
+
+
+### CI/CD
+
+* keep release-please green when no release PR is opened ([41860ce](https://github.com/Taylor8484/outlook-for-linux/commit/41860ceff09cd94f3a117d9b8a8213986b10d19f))
+
 ## 2.0.0 (2026-09-13)
 
 First release of the re-forked outlook-for-linux.
