@@ -3,25 +3,11 @@ const { app } = require("electron");
 class CommandLineManager {
   // Must be called before app.getPath('userData')
   static addSwitchesBeforeConfigLoad() {
-    app.commandLine.appendSwitch("try-supported-channel-layouts");
-
     // Allow audio playback without requiring a prior user gesture.
     // Notification sounds fire in the background (no user gesture) so without
     // this switch Chromium's autoplay policy suspends the AudioContext after
     // the first play and rejects subsequent audio on all renderer paths.
     app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
-
-    if (app.commandLine.hasSwitch("disable-features")) {
-      const disabledFeatures = app.commandLine.getSwitchValue("disable-features").split(",");
-      if (!disabledFeatures.includes("HardwareMediaKeyHandling")) {
-        console.warn(
-          "disable-features switch already set without HardwareMediaKeyHandling. " +
-          "Teams media controls may conflict with system media key handling."
-        );
-      }
-    } else {
-      app.commandLine.appendSwitch("disable-features", "HardwareMediaKeyHandling");
-    }
   }
 
   static addSwitchesAfterConfigLoad(config) {
@@ -109,10 +95,6 @@ class CommandLineManager {
     app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
     app.commandLine.appendSwitch("enable-gpu-memory-buffer-video-frames");
 
-    // Enable hardware-accelerated WebRTC encoding/decoding for video calls
-    app.commandLine.appendSwitch("enable-webrtc-hw-decoding");
-    app.commandLine.appendSwitch("enable-webrtc-hw-encoding");
-
     // Optimize rasterization threads for multi-core processors
     app.commandLine.appendSwitch("num-raster-threads", "4");
 
@@ -154,27 +136,9 @@ class CommandLineManager {
     }
   }
 
-  // Wayland display server configuration.
-  // Handles three independent concerns:
-  //   1. PipeWire — always enabled for screen sharing
-  //   2. GPU — auto-disabled unless user overrides or XWayland optimizations are on
-  //   3. Fake media UI — applied unless XWayland optimizations skip it
+  // Wayland display server configuration. GPU composition is auto-disabled
+  // unless the user overrides it or XWayland optimizations are on.
   static #configureWayland(config) {
-    // 1. PipeWire is always required for screen sharing on Wayland
-    if (app.commandLine.hasSwitch("enable-features")) {
-      const features = app.commandLine.getSwitchValue("enable-features").split(",");
-      if (!features.includes("WebRTCPipeWireCapturer")) {
-        console.warn(
-          "enable-features switch already set without WebRTCPipeWireCapturer. " +
-          "Screen sharing on Wayland may not work correctly. " +
-          "Please add WebRTCPipeWireCapturer to your enable-features list."
-        );
-      }
-    } else {
-      console.info("[Wayland] Enabling PipeWire for screen sharing");
-      app.commandLine.appendSwitch("enable-features", "WebRTCPipeWireCapturer");
-    }
-
     // Detect XWayland: ozone-platform=x11 forces X11 rendering on a Wayland session.
     // The runtime check is needed because the same config file is used for both
     // native Wayland and XWayland sessions.
@@ -195,12 +159,6 @@ class CommandLineManager {
     } else {
       console.info("[Wayland] Disabling GPU composition (default)");
       config.disableGpu = true;
-    }
-
-    // 3. Fake media UI: needed for screen sharing (#2217), but breaks camera
-    //    under XWayland (#2169). Only skip when XWayland optimizations are on.
-    if (!xwaylandOptimizations) {
-      app.commandLine.appendSwitch("use-fake-ui-for-media-stream");
     }
   }
 

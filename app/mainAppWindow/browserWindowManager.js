@@ -1,16 +1,6 @@
-const {
-  app,
-  BrowserWindow,
-  ipcMain,
-  nativeImage,
-  nativeTheme,
-  powerSaveBlocker,
-} = require("electron");
+const { BrowserWindow, nativeImage, nativeTheme } = require("electron");
 const path = require("node:path");
-const { spawn } = require("node:child_process");
 const windowStateKeeper = require("electron-window-state");
-const { StreamSelector } = require("../screenSharing");
-const IncomingCallToast = require("../incomingCallToast");
 const {
   collectPartitionsToClear,
   clearStorageForPartitions,
@@ -22,19 +12,7 @@ class BrowserWindowManager {
     this.iconChooser = properties.iconChooser;
     // Optional: only the startup clear reads it.
     this.profilesManager = properties.profilesManager ?? null;
-    this.isOnCall = false;
-    this.blockerId = null;
     this.window = null;
-    this.incomingCallCommandProcess = null;
-    this.incomingCallToast = null;
-  }
-
-  /**
-   * Get screen lock inhibition method from config.
-   * @returns {string} "Electron" or "WakeLockSentinel"
-   */
-  get screenLockInhibitionMethod() {
-    return this.config?.screenSharing?.lockInhibitionMethod ?? "Electron";
   }
 
   async createWindow() {
@@ -54,7 +32,6 @@ class BrowserWindowManager {
     }
 
     this.window = this.createNewBrowserWindow(windowState);
-    this.assignEventHandlers();
 
     windowState.manage(this.window);
 
@@ -63,10 +40,6 @@ class BrowserWindowManager {
         throw new Error("Sorry, this app does not support window.eval().");
       };
     }
-
-    this.incomingCallToast = new IncomingCallToast((action) => {
-      this.window.webContents.send("incoming-call-action", action);
-    });
 
     return this.window;
   }
@@ -84,13 +57,13 @@ class BrowserWindowManager {
 
   createNewBrowserWindow(windowState) {
     return new BrowserWindow({
-      title: "Teams for Linux",
+      title: "Outlook for Linux",
       x: windowState.x,
       y: windowState.y,
 
       width: windowState.width,
       height: windowState.height,
-      backgroundColor: nativeTheme.shouldUseDarkColors ? "#302a75" : "#fff",
+      backgroundColor: nativeTheme.shouldUseDarkColors ? "#292929" : "#fff",
 
       show: false,
       autoHideMenuBar: this.config.menubar == "auto",
@@ -103,173 +76,14 @@ class BrowserWindowManager {
         plugins: true,
         spellcheck: true,
         webviewTag: true,
-        // SECURITY: Disabled for Teams DOM access, compensated by IPC validation
-        contextIsolation: false,  // Required for ReactHandler DOM access
+        // SECURITY: contextIsolation is off so preload.js can replace
+        // window.Notification in the page's own context; compensated by IPC
+        // validation (app/security/ipcValidator.js).
+        contextIsolation: false,
         nodeIntegration: false,   // Secure: preload scripts don't need this
         sandbox: false,           // Required for system API access
       },
     });
-  }
-
-  assignEventHandlers() {
-    // Handle screen sharing source selection from user
-    ipcMain.on("select-source", this.assignSelectSourceHandler());
-    if (this.screenLockInhibitionMethod === "WakeLockSentinel") {
-      // Wake Lock auto-releases when document.visibilityState becomes 'hidden',
-      // which happens on both minimise and tray-hide. Re-acquire on both events.
-      const reAcquireWakeLock = this.enableWakeLockOnWindowRestore.bind(this);
-      this.window.on("restore", reAcquireWakeLock);
-      this.window.on("show", reAcquireWakeLock);
-    }
-    // Handle incoming call notification created
-    ipcMain.handle(
-      "incoming-call-created",
-      this.assignOnIncomingCallCreatedHandler()
-    );
-    // Handle incoming call notification ended
-    ipcMain.handle(
-      "incoming-call-ended",
-      this.assignOnIncomingCallEndedHandler()
-    );
-    // Notify when a call is connected
-    ipcMain.handle("call-connected", this.assignOnCallConnectedHandler());
-    // Notify when a call is disconnected
-    ipcMain.handle("call-disconnected", this.assignOnCallDisconnectedHandler());
-  }
-
-  assignSelectSourceHandler() {
-    return (event) => {
-      const streamSelector = new StreamSelector(this.window);
-      streamSelector.show((source) => {
-        event.reply("select-source", source);
-      });
-    };
-  }
-
-  disableScreenLockElectron() {
-    if (this.blockerId == null) {
-      this.blockerId = powerSaveBlocker.start("prevent-display-sleep");
-      console.debug(
-        `Power save is disabled using ${this.screenLockInhibitionMethod} API.`
-      );
-      return true;
-    }
-    return false;
-  }
-
-  disableScreenLockWakeLockSentinel() {
-    this.window.webContents.send("enable-wakelock");
-    console.debug(
-      `Power save is disabled using ${this.screenLockInhibitionMethod} API.`
-    );
-    return true;
-  }
-
-  enableScreenLockElectron() {
-    if (this.blockerId != null && powerSaveBlocker.isStarted(this.blockerId)) {
-      console.debug(
-        `Power save is restored using ${this.screenLockInhibitionMethod} API`
-      );
-      powerSaveBlocker.stop(this.blockerId);
-      this.blockerId = null;
-      return true;
-    }
-    return false;
-  }
-
-  enableScreenLockWakeLockSentinel() {
-    this.window.webContents.send("disable-wakelock");
-    console.debug(
-      `Power save is restored using ${this.screenLockInhibitionMethod} API`
-    );
-    return true;
-  }
-
-  enableWakeLockOnWindowRestore() {
-    if (this.isOnCall) {
-      this.window.webContents.send("enable-wakelock");
-    }
-  }
-
-  /**
-   * Sanitizes a string argument for use in spawn() command arguments.
-   * Ensures the value is a string and limits its length to prevent abuse.
-   */
-  sanitizeCommandArg(value) {
-    if (typeof value !== 'string') return '';
-    // Limit argument length, then keep only letters, numbers, marks, spaces and
-    // punctuation. This drops control characters and shell metacharacters
-    // (backticks, $, |, ~, ^, =, +, <, >) in case the configured command is a
-    // shell script that mishandles its arguments.
-    const trimmed = value.substring(0, 500);
-    return trimmed.replaceAll(/[^\p{L}\p{N}\p{M}\p{Zs}\p{P}]/gu, '');
-  }
-
-  assignOnIncomingCallCreatedHandler() {
-    return async (e, data) => {
-      if (this.config.incomingCallCommand) {
-        this.handleOnIncomingCallEnded();
-        const commandArgs = [
-          ...this.config.incomingCallCommandArgs,
-          this.sanitizeCommandArg(data.caller),
-          this.sanitizeCommandArg(data.text),
-          this.sanitizeCommandArg(data.image),
-        ];
-        this.incomingCallCommandProcess = spawn(
-          this.config.incomingCallCommand,
-          commandArgs
-        );
-        this.incomingCallCommandProcess.on('error', (err) => {
-          console.error('[IncomingCall] Failed to execute incoming call command', { code: err.code });
-          this.incomingCallCommandProcess = null;
-        });
-      }
-      if (this.config.enableIncomingCallToast) {
-        this.incomingCallToast.show(data);
-      }
-      app.emit('teams-incoming-call-started');
-    };
-  }
-
-  assignOnIncomingCallEndedHandler() {
-    return async (e) => {
-      this.handleOnIncomingCallEnded();
-      app.emit('teams-incoming-call-ended');
-    };
-  }
-
-  handleOnIncomingCallEnded() {
-    if (this.incomingCallCommandProcess) {
-      this.incomingCallCommandProcess.kill("SIGTERM");
-      this.incomingCallCommandProcess = null;
-    }
-    if (this.config.enableIncomingCallToast) {
-      this.incomingCallToast.hide();
-    }
-  }
-
-  assignOnCallConnectedHandler() {
-    return async (e) => {
-      this.isOnCall = true;
-      const result = this.screenLockInhibitionMethod === "Electron"
-        ? this.disableScreenLockElectron()
-        : this.disableScreenLockWakeLockSentinel();
-
-      app.emit('teams-call-connected');
-      return result;
-    };
-  }
-
-  assignOnCallDisconnectedHandler() {
-    return async (e) => {
-      this.isOnCall = false;
-      const result = this.screenLockInhibitionMethod === "Electron"
-        ? this.enableScreenLockElectron()
-        : this.enableScreenLockWakeLockSentinel();
-
-      app.emit('teams-call-disconnected');
-      return result;
-    };
   }
 }
 

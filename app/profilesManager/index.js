@@ -3,8 +3,8 @@ const { EventEmitter } = require("node:events");
 const crypto = require("node:crypto");
 
 const STORE_KEY = "app.profiles";
-const PARTITION_PREFIX = "persist:teams-profile-";
-const LEGACY_PARTITION = "persist:teams-4-linux";
+const PARTITION_PREFIX = "persist:outlook-profile-";
+const LEGACY_PARTITION = "persist:outlook-4-linux";
 
 // Free-text caps so a renderer-supplied string cannot land oversized in CSS
 // (avatarColor) or DOM text (avatarInitials, url) once Phase 1c wires the
@@ -148,7 +148,7 @@ class ProfilesManager {
     return profile;
   }
 
-  // Bootstrap Profile 0 against the legacy `persist:teams-4-linux` partition
+  // Bootstrap Profile 0 against the legacy `persist:outlook-4-linux` partition
   // so the user's existing login survives the first multi-account flag flip
   // (ADR-020 § "First-run bootstrap"). Main-process only — never exposed via
   // IPC, since a renderer being able to point a profile at an arbitrary

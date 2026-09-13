@@ -148,7 +148,7 @@ describe('Teams for Linux realistic scenarios', () => {
 	test('Config file path log', () => {
 		const result = sanitizeLogData([
 			'Loading config from:',
-			'/home/realusername/.config/teams-for-linux/config.json'
+			'/home/realusername/.config/outlook-for-linux/config.json'
 		]);
 		assert.ok(result[1].includes('/home/[USER]'), `Expected username redacted: ${result[1]}`);
 	});

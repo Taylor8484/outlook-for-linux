@@ -170,7 +170,7 @@ class ManageProfileDialog {
       message: `Remove "${profile.name}"?`,
       detail:
         "This will permanently delete this profile's login and local data. " +
-        "If you re-add this profile later, Teams will need to re-authenticate.",
+        "If you re-add this profile later, you will need to sign in again.",
       buttons: ["Cancel", "Remove"],
       defaultId: 0,
       cancelId: 0,

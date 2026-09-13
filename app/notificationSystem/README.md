@@ -6,7 +6,7 @@ Custom in-app toast notifications as an alternative to OS-level notifications.
 
 - **CustomNotificationManager** - Coordinates toast display, handles IPC channel `notification-show-toast`
 - **NotificationToast** - BrowserWindow wrapper, manages individual notification lifecycle
-- **notificationToast.html** - Toast UI with Teams design language
+- **notificationToast.html** - Toast UI
 
 ## IPC Channels
 
@@ -28,7 +28,6 @@ Custom in-app toast notifications as an alternative to OS-level notifications.
 
 ## Implementation Details
 
-- Follows `IncomingCallToast` pattern for consistency
 - Uses `electron-positioner` for multi-monitor support
 - Keeps active toasts in memory to prevent garbage collection
 - Toast appears in bottom-right corner with auto-dismiss

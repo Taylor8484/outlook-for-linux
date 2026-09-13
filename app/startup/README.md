@@ -7,7 +7,8 @@ Handles Electron command line switches and initialization flags.
 Manages command line switches that must be set during app startup. Some switches are applied before config loading, others after.
 
 **Key responsibilities:**
-- Media key handling configuration
+- Autoplay policy so notification sounds play without a user gesture
+- macOS performance switches (`media.macPerformanceMode`)
 - Wayland/X11 display server detection and configuration
 - GPU acceleration settings
 - Proxy and authentication configuration

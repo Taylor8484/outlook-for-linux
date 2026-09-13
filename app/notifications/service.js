@@ -5,40 +5,29 @@ const path = require("node:path");
 const ICON_FETCH_TIMEOUT_MS = 1000;
 const MAX_ICON_BYTES = 5 * 1024 * 1024;
 
-const USER_STATUS = {
-  UNKNOWN: -1,
-  AVAILABLE: 1,
-};
-
 class NotificationService {
   #soundPlayer;
   #config;
   #mainWindow;
-  #getUserStatus;
   #notificationSounds;
 
-  constructor(soundPlayer, config, mainWindow, getUserStatus) {
+  constructor(soundPlayer, config, mainWindow) {
     this.#soundPlayer = soundPlayer;
     this.#config = config;
     this.#mainWindow = mainWindow;
-    this.#getUserStatus = getUserStatus;
 
     this.#notificationSounds = [
       {
         type: "new-message",
         file: path.join(config.appPath, "assets/sounds/new_message.wav"),
       },
-      {
-        type: "meeting-started",
-        file: path.join(config.appPath, "assets/sounds/meeting_started.wav"),
-      },
     ];
   }
 
   initialize() {
-    // Play notification sound for Teams messages and calls
+    // Play notification sound for new mail and reminders
     ipcMain.handle("play-notification-sound", this.#handlePlayNotificationSound.bind(this));
-    // Show system notification for Teams activity
+    // Show system notification for Outlook activity
     ipcMain.handle("show-notification", this.#handleShowNotification.bind(this));
   }
 
@@ -236,18 +225,6 @@ class NotificationService {
     // Player failed to load or notification sound disabled in config
     if (!this.#soundPlayer || this.#config.disableNotificationSound) {
       console.debug("Notification sounds are disabled");
-      return;
-    }
-
-    const userStatus = this.#getUserStatus();
-
-    // Notification sound disabled if not available set in config and user status is not "Available" (or is unknown)
-    if (
-      this.#config.disableNotificationSoundIfNotAvailable &&
-      userStatus !== USER_STATUS.AVAILABLE &&
-      userStatus !== USER_STATUS.UNKNOWN
-    ) {
-      console.debug("Notification sounds are disabled when user is not active");
       return;
     }
 

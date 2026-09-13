@@ -109,7 +109,7 @@ describe('backgroundPortal', () => {
 			const autostartDir = path.join(dir, '.config', 'autostart');
 			fs.mkdirSync(autostartDir, { recursive: true });
 			fs.writeFileSync(
-				path.join(autostartDir, 'com.github.IsmaelMartinez.teams_for_linux.desktop'),
+				path.join(autostartDir, 'io.github.taylor8484.outlook_for_linux.desktop'),
 				entryContents
 			);
 		}
@@ -125,7 +125,7 @@ describe('backgroundPortal', () => {
 			value: 'linux',
 			configurable: true,
 		});
-		process.env.FLATPAK_ID = 'com.github.IsmaelMartinez.teams_for_linux';
+		process.env.FLATPAK_ID = 'io.github.taylor8484.outlook_for_linux';
 	}
 
 	it('does not initialise without FLATPAK_ID', () => {
@@ -134,7 +134,7 @@ describe('backgroundPortal', () => {
 	});
 
 	it('does not initialise outside linux even with FLATPAK_ID set', { skip: process.platform === 'linux' }, () => {
-		process.env.FLATPAK_ID = 'com.github.IsmaelMartinez.teams_for_linux';
+		process.env.FLATPAK_ID = 'io.github.taylor8484.outlook_for_linux';
 		assert.strictEqual(require(MODULE_PATH).init(), false);
 	});
 
@@ -195,7 +195,7 @@ describe('backgroundPortal', () => {
 		pretendFlatpakOnLinux();
 		withTempHome(
 			'[Desktop Entry]\nType=Application\n' +
-				'Exec=flatpak run com.github.IsmaelMartinez.teams_for_linux --minimized %U\n'
+				'Exec=flatpak run io.github.taylor8484.outlook_for_linux --minimized %U\n'
 		);
 		const bus = makeFakeBus({ portalVersion: 2, responseCode: 0 });
 		assert.strictEqual(loadWithFakeBus(bus).init(), true);
@@ -216,7 +216,7 @@ describe('backgroundPortal', () => {
 		pretendFlatpakOnLinux();
 		withTempHome(
 			'[Desktop Entry]\nType=Application\n' +
-				'Exec=flatpak run com.github.IsmaelMartinez.teams_for_linux --minimized %U\n'
+				'Exec=flatpak run io.github.taylor8484.outlook_for_linux --minimized %U\n'
 		);
 		const bus = makeFakeBus({ portalVersion: 2, responseCode: 0 });
 		assert.strictEqual(loadWithFakeBus(bus).init(), true);
@@ -236,7 +236,7 @@ describe('backgroundPortal', () => {
 			pretendFlatpakOnLinux();
 			withTempHome(
 				'[Desktop Entry]\nType=Application\n' +
-					'Exec=flatpak run com.github.IsmaelMartinez.teams_for_linux\n' +
+					'Exec=flatpak run io.github.taylor8484.outlook_for_linux\n' +
 					`${disablingLine}\n`
 			);
 			const bus = makeFakeBus({ portalVersion: 2, responseCode: 0 });

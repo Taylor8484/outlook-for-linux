@@ -100,8 +100,8 @@ function fakeWindow() {
   };
 }
 
-const LEGACY = { id: 'profile-0', partition: 'persist:teams-4-linux', name: 'My account' };
-const PROFILE_A = { id: 'profile-a', partition: 'persist:teams-profile-a', name: 'A' };
+const LEGACY = { id: 'profile-0', partition: 'persist:outlook-4-linux', name: 'My account' };
+const PROFILE_A = { id: 'profile-a', partition: 'persist:outlook-profile-a', name: 'A' };
 
 function fakeProfilesManager(profiles) {
   const handlers = {};
@@ -222,7 +222,7 @@ describe('ProfileViewManager sender attribution wiring', () => {
     // ADR-020 remove contract: the partition's storage is cleared via the
     // cached partition string, not via the dead webContents.
     assert.strictEqual(
-      partitionSessions['persist:teams-profile-a'].clearCalls,
+      partitionSessions['persist:outlook-profile-a'].clearCalls,
       1
     );
   });

@@ -4,11 +4,11 @@ Displays `chrome://gpu` information in a separate window for debugging graphics 
 
 ## Usage
 
-**Menu:** Teams for Linux → Debug → Open GPU Info
+**Menu:** Outlook for Linux → Debug → Open GPU Info
 
 ## Implementation
 
-Simple window wrapper following the same pattern as `DocumentationWindow`:
+Simple window wrapper:
 - Reuses existing window if already open
 - Sandboxed and secure (no Node.js access)
 - Auto-cleanup on close
@@ -17,8 +17,7 @@ Simple window wrapper following the same pattern as `DocumentationWindow`:
 
 If you want to add more debug windows, these Chrome internal pages might be useful:
 
-### For Teams-Specific Debugging
-- `chrome://webrtc-internals` - WebRTC call diagnostics (⚠️ may not work in Electron)
+### For Outlook-Specific Debugging
 - `chrome://media-internals` - Audio/video playback debugging
 - `chrome://net-internals` - Network and DNS debugging
 

@@ -29,7 +29,7 @@ const BACKGROUND_INTERFACE = "org.freedesktop.portal.Background";
 const REQUEST_INTERFACE = "org.freedesktop.portal.Request";
 // Shown by the portal backend in the permission dialog / notification.
 const REQUEST_REASON =
-  "Show notifications and keep calls ringing while the window is closed";
+  "Show new mail notifications while the window is closed";
 // Shown under the app entry in GNOME's Background Apps menu. Portal limit is
 // 96 characters, single line.
 const STATUS_MESSAGE = "Running in background";

@@ -1,26 +1,25 @@
 # Main App Window
 
-Manages the primary BrowserWindow that hosts the Teams web interface.
+Manages the primary BrowserWindow that hosts the Outlook web interface.
 
 ## Components
 
 - **[index.js](index.js)**: Entry point and window lifecycle management
 - **[browserWindowManager.js](browserWindowManager.js)**: Window creation, configuration, and event handling
-- **[deepLinkRouter.js](deepLinkRouter.js)**: In-page routing for Teams deep links
+- **[profileViewManager.js](profileViewManager.js)**: Per-profile `WebContentsView`s for multi-account mode
+- **[senderProfileMap.js](senderProfileMap.js)**: Maps a `webContents` id to the profile that owns it
 
 ## Responsibilities
 
 - Window state management (minimize, maximize, close)
 - Web contents configuration and security settings
-- Integration with Teams web interface
-- Call event handling and screen sharing coordination
-- Deep link handling for `msteams:` protocol links and HTTPS Teams links
+- Integration with Outlook web interface
+- Loading Outlook URLs passed on the command line
 
-## Deep Link Routing
+## Command-Line URLs
 
-`onAppSecondInstance` navigates the window to a resolved deep link, which
-replaces the document and cold-boots the SPA. Launcher links avoid that:
-`deepLinkRouter` assigns the equivalent `#/l/...` route to the main frame
-instead, guarded by an origin check. The SPA rewrites the fragment when it
-handles the route, and anything left unconsumed falls back to the full
-navigation.
+`processArgs` picks the first `https` argument on an Outlook web app host
+(`outlook.office.com`, `outlook.office365.com`, `outlook.cloud.microsoft`,
+`outlook.live.com`, or a subdomain of one) and loads it into the window, both
+at startup and when a second instance forwards its arguments through
+`onAppSecondInstance`. There is no custom protocol handler.

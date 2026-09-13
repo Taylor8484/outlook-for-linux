@@ -25,7 +25,7 @@
  * event to the matching prompt by the sender's webContents id. app/index.js
  * wraps ipcMain.on in a validation closure, so removeListener(originalFn) is a
  * no-op and per-invocation add/remove would leak a listener every time; the
- * register-once pattern (shared with joinMeetingDialog, login, etc.) avoids
+ * register-once pattern (shared with login, the profile dialogs, etc.) avoids
  * that while still letting several prompts coexist without cross-talk.
  */
 

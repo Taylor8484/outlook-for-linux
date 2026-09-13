@@ -1,4 +1,4 @@
-// Configuration option definitions for Teams for Linux.
+// Configuration option definitions for Outlook for Linux.
 //
 // This is the single source of truth for the wrapper's config schema. It is
 // consumed at runtime by the yargs parser in ./index.js, and by the docs/schema
@@ -23,47 +23,7 @@
 // the regenerated docs-site/docs/configuration-generated.md and
 // docs-site/static/config-schema.json (CI enforces they stay in sync).
 
-// defaults.js is a pure data module (no Electron imports), so requiring it here
-// keeps options.js loadable by the generator outside Electron.
-const defaults = require("./defaults");
-
 module.exports = {
-      appActiveCheckInterval: {
-        default: 2,
-        describe:
-          "A numeric value in seconds as poll interval to check if the system is active from being idle",
-        type: "number",
-        applyMode: "restart",
-      },
-      screenSharing: {
-        default: {
-          thumbnail: {
-            enabled: true,
-            alwaysOnTop: true,
-          },
-          lockInhibitionMethod: "Electron",
-        },
-        describe:
-          "Screen sharing configuration. thumbnail: controls the preview window shown during active sharing. lockInhibitionMethod: screen lock inhibition method (Electron/WakeLockSentinel).",
-        type: "object",
-        fields: {
-          "thumbnail.enabled": {
-            type: "boolean",
-            describe:
-              "Automatically show the preview thumbnail window when screen sharing starts.",
-          },
-          "thumbnail.alwaysOnTop": {
-            type: "boolean",
-            describe: "Keep the screen sharing thumbnail window always on top.",
-          },
-          "lockInhibitionMethod": {
-            type: "string",
-            describe: "Screen lock inhibition method used while sharing.",
-            choices: ["Electron", "WakeLockSentinel"],
-          },
-        },
-        applyMode: "restart",
-      },
       appIcon: {
         default: "",
         describe:
@@ -80,22 +40,8 @@ module.exports = {
         applyMode: "restart",
         deprecated: "use tray.iconType instead",
       },
-      appIdleTimeout: {
-        default: 300,
-        describe:
-          "A numeric value in seconds as duration before app considers the system as idle",
-        type: "number",
-        applyMode: "restart",
-      },
-      appIdleTimeoutCheckInterval: {
-        default: 10,
-        describe:
-          "A numeric value in seconds as poll interval to check if the appIdleTimeout is reached",
-        type: "number",
-        applyMode: "restart",
-      },
       appTitle: {
-        default: "Microsoft Teams",
+        default: "Microsoft Outlook",
         describe: "A text to be suffixed with page title",
         type: "string",
         applyMode: "restart",
@@ -114,54 +60,12 @@ module.exports = {
         type: "string",
         applyMode: "restart",
       },
-      awayOnSystemIdle: {
-        default: false,
-        describe: "Sets the user status as away when system goes idle",
-        type: "boolean",
-        applyMode: "restart",
-      },
-      idleDetection: {
-        default: {
-          forceState: false,
-          stateFile: "/tmp/teams-for-linux-idle-state-$USER",
-        },
-        describe: "Idle detection configuration. forceState: enables state file-based idle control (workaround for Wayland/Hyprland). stateFile: path to state file with $USER expansion support.",
-        type: "object",
-        fields: {
-          "forceState": {
-            type: "boolean",
-            describe:
-              "Enable state file-based idle state control (workaround for Wayland/Hyprland).",
-          },
-          "stateFile": {
-            type: "string",
-            describe: "Path to the idle state file (supports $USER expansion).",
-          },
-        },
-        applyMode: "restart",
-      },
       chromeUserAgent: {
         default: `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome} Safari/537.36`,
         describe: "Google Chrome User Agent",
         type: "string",
         applyMode: "restart",
         deprecated: "use platform.chromeUserAgent instead",
-      },
-      customBGServiceBaseUrl: {
-        default: "http://localhost",
-        describe:
-          "Base URL of the server which provides custom background images",
-        type: "string",
-        applyMode: "restart",
-        deprecated: "use customBackground.serviceBaseUrl instead",
-      },
-      customBGServiceConfigFetchInterval: {
-        default: 0,
-        describe:
-          "A numeric value in seconds as poll interval to download background service config download",
-        type: "number",
-        applyMode: "restart",
-        deprecated: "use customBackground.configFetchInterval instead",
       },
       customCACertsFingerprints: {
         default: [],
@@ -170,80 +74,12 @@ module.exports = {
         type: "array",
         applyMode: "restart",
       },
-      customCSSName: {
-        default: "",
-        describe:
-          'custom CSS name for the packaged available css files. Currently those are: "compactDark", "compactLight", "tweaks", "condensedDark" and "condensedLight" ',
-        type: "string",
-        applyMode: "restart",
-        deprecated: "use appearance.cssName instead",
-      },
       customCSSLocation: {
         default: "",
         describe: "custom CSS styles file location",
         type: "string",
         applyMode: "restart",
         deprecated: "use appearance.cssLocation instead",
-      },
-      customStickers: {
-        default: {
-          enabled: false,
-          folder: "",
-          formats: ["png", "jpg", "jpeg", "gif", "webp"],
-          urlImport: {
-            enabled: true,
-            allowedContentTypes: [
-              "image/png",
-              "image/jpeg",
-              "image/gif",
-              "image/webp",
-            ],
-            maxBytes: 5242880,
-          },
-        },
-        describe:
-          "Custom stickers feature. enabled: master flag (off by default). folder: absolute path to the sticker folder; empty string uses <userData>/stickers/ (auto-created). formats: file extensions to scan (lowercase, no leading dot). The scanner reads the configured folder plus one level of subdirectories so packs imported under <folder>/<pack>/ are visible. urlImport: HTTPS URL import (drop or paste a URL onto the sticker panel); allowedContentTypes restricts what the wrapper will save; maxBytes caps individual file size.",
-        type: "object",
-        fields: {
-          "enabled": {
-            type: "boolean",
-            describe: "Master flag for the custom stickers feature.",
-          },
-          "folder": {
-            type: "string",
-            describe:
-              "Absolute path to the sticker folder; empty string uses <userData>/stickers/, created on first run if missing.",
-          },
-          "formats": {
-            type: "array",
-            describe:
-              "File extensions the scanner accepts (lowercase, no leading dot); the scanner reads the configured folder plus one level of subdirectories.",
-          },
-          "urlImport.enabled": {
-            type: "boolean",
-            describe:
-              "Allow importing stickers from HTTPS URLs via the panel header input or by dropping a URL on the panel.",
-          },
-          "urlImport.allowedContentTypes": {
-            type: "array",
-            describe:
-              "Response content-types the wrapper will accept and save when importing from a URL.",
-          },
-          "urlImport.maxBytes": {
-            type: "number",
-            describe:
-              "Per-file size cap in bytes for URL imports; larger responses are rejected.",
-          },
-        },
-        applyMode: "restart",
-      },
-      disableTimestampOnCopy: {
-        default: false,
-        describe:
-          "Controls whether timestamps are included when copying messages in chats",
-        type: "boolean",
-        applyMode: "restart",
-        deprecated: "use platform.disableTimestampOnCopy instead",
       },
       class: {
         default: null,
@@ -378,14 +214,7 @@ module.exports = {
       },
       disableNotificationSound: {
         default: false,
-        describe: "Disable chat/meeting start notification sound",
-        type: "boolean",
-        applyMode: "live",
-      },
-      disableNotificationSoundIfNotAvailable: {
-        default: false,
-        describe:
-          "Disables notification sound unless status is Available (e.g. while in a call, busy, etc.)",
+        describe: "Disable notification sound",
         type: "boolean",
         applyMode: "live",
       },
@@ -404,7 +233,7 @@ module.exports = {
           },
         },
         describe:
-          "Notification behaviour. timeoutType: how long notifications stay in the system notification center (Linux/Windows only). Choices: `default` (auto-clear per system policy) or `never` (persist until the user dismisses, useful on GNOME and other desktops that auto-remove notifications). Mirrors Electron's Notification timeoutType. May not be honoured by every notification daemon. electron.clickAction: what clicking a notification does when notificationMethod is `electron`. Choices: `show` (reveal the window and let Teams open the conversation the notification came from, the default), `restore` (also un-minimise and focus, which helps on GNOME where a plain show does not raise the window) or `none` (do nothing, and do not open the conversation either).",
+          "Notification behaviour. timeoutType: how long notifications stay in the system notification center (Linux/Windows only). Choices: `default` (auto-clear per system policy) or `never` (persist until the user dismisses, useful on GNOME and other desktops that auto-remove notifications). Mirrors Electron's Notification timeoutType. May not be honoured by every notification daemon. electron.clickAction: what clicking a notification does when notificationMethod is `electron`. Choices: `show` (reveal the window and let Outlook open the item the notification came from, the default), `restore` (also un-minimise and focus, which helps on GNOME where a plain show does not raise the window) or `none` (do nothing, and do not open the item either).",
         type: "object",
         fields: {
           "timeoutType": {
@@ -416,7 +245,7 @@ module.exports = {
           "electron.clickAction": {
             type: "string",
             describe:
-              "What clicking an Electron notification does (notificationMethod `electron` only): `show` reveals the window and lets Teams open the sending conversation (default), `restore` also un-minimises and focuses it (helps on GNOME), `none` does nothing at all.",
+              "What clicking an Electron notification does (notificationMethod `electron` only): `show` reveals the window and lets Outlook open the item the notification came from (default), `restore` also un-minimises and focuses it (helps on GNOME), `none` does nothing at all.",
             choices: ["show", "restore", "none"],
           },
         },
@@ -460,49 +289,12 @@ module.exports = {
         applyMode: "restart",
         deprecated: "use platform.emulateWindowsChromium instead",
       },
-      enableIncomingCallToast: {
-        default: false,
-        describe: "Enable incoming call toast",
-        type: "boolean",
-        applyMode: "restart",
-        deprecated: "use incomingCalls.toast instead",
-      },
-      followSystemTheme: {
-        default: false,
-        describe:
-          "Follow the operating-system dark/light theme preference. Default is false; set true to drive Teams's theme from the OS preference.",
-        type: "boolean",
-        applyMode: "restart",
-        deprecated: "use appearance.followSystemTheme instead",
-      },
       frame: {
         default: true,
         describe: "Specify false to create a Frameless Window. Default is true",
         type: "boolean",
         applyMode: "restart",
         deprecated: "use window.frame instead",
-      },
-      incomingCallCommand: {
-        default: null,
-        describe:
-          'Command to execute on an incoming call. (caution: "~" in path is not supported)',
-        type: "string",
-        applyMode: "restart",
-        deprecated: "use incomingCalls.command instead",
-      },
-      incomingCallCommandArgs: {
-        default: [],
-        describe: "Arguments for the incoming call command.",
-        type: "array",
-        applyMode: "restart",
-        deprecated: "use incomingCalls.commandArgs instead",
-      },
-      isCustomBackgroundEnabled: {
-        default: false,
-        describe: "A flag indicates whether to enable custom background or not",
-        type: "boolean",
-        applyMode: "restart",
-        deprecated: "use customBackground.enabled instead",
       },
       logConfig: {
         default: {
@@ -531,13 +323,6 @@ module.exports = {
           },
         },
         applyMode: "restart",
-      },
-      meetupJoinRegEx: {
-        default: defaults.meetupJoinRegEx,
-        describe: "Regex for Teams meetup-join and related links",
-        type: "string",
-        applyMode: "restart",
-        deprecated: "use urlHandling.meetupJoinRegEx instead",
       },
       menubar: {
         default: "auto",
@@ -586,16 +371,8 @@ module.exports = {
         },
         applyMode: "restart",
       },
-      onNewWindowOpenMeetupJoinUrlInApp: {
-        default: true,
-        describe:
-          "Open meetupJoinRegEx URLs in the app instead of the default browser",
-        type: "boolean",
-        applyMode: "restart",
-        deprecated: "use urlHandling.openMeetupJoinInApp instead",
-      },
       partition: {
-        default: "persist:teams-4-linux",
+        default: "persist:outlook-4-linux",
         describe: "BrowserWindow webpreferences partition",
         type: "string",
         applyMode: "restart",
@@ -608,33 +385,16 @@ module.exports = {
         applyMode: "restart",
       },
       network: {
-	default: {
-		webRTCIPHandlingPolicy: null,
-		disableQuic: true,
-	},
-      	describe:
-	  "Network configuration. " +
-    	  "webRTCIPHandlingPolicy: WebRTC IP handling policy to control which network interfaces are used for ICE candidates. " +
-    	  "Use 'default_public_interface_only' to prevent WebRTC from advertising interfaces that have no internet route " +
-    	  "(e.g. a secondary ethernet adapter), which can cause calls to drop to OnHold due to asymmetric STUN routing. " +
-    	  "Valid values: 'default', 'default_public_and_private_interfaces', 'default_public_interface_only', 'disable_non_proxied_udp'. " +
-    	  "Disabled by default (opt-in). " +
-    	  "disableQuic: Append Chromium's --disable-quic switch at startup. Defaults to true to work around issue #2518 " +
-    	  "(concurrent SharePoint downloads abort with ERR_QUIC_PROTOCOL_ERROR on the shared QUIC session). Set to false " +
-    	  "to re-enable QUIC if a future Chromium release fixes the underlying transport bug.",
-	type: "object",
+        default: {
+          disableQuic: true,
+        },
+        describe:
+          "Network configuration. " +
+          "disableQuic: Append Chromium's --disable-quic switch at startup. Defaults to true to work around issue #2518 " +
+          "(concurrent SharePoint downloads abort with ERR_QUIC_PROTOCOL_ERROR on the shared QUIC session). Set to false " +
+          "to re-enable QUIC if a future Chromium release fixes the underlying transport bug.",
+        type: "object",
         fields: {
-          "webRTCIPHandlingPolicy": {
-            type: "string",
-            describe:
-              "WebRTC IP handling policy controlling which network interfaces are used for ICE candidate gathering.",
-            choices: [
-              "default",
-              "default_public_and_private_interfaces",
-              "default_public_interface_only",
-              "disable_non_proxied_udp",
-            ],
-          },
           "disableQuic": {
             type: "boolean",
             describe:
@@ -670,31 +430,9 @@ module.exports = {
         applyMode: "restart",
         deprecated: "use tray.enabled instead",
       },
-      msTeamsProtocols: {
-        default: {
-          v1: "^msteams:/(?:meet/|l/(?:app|call|channel|chat|entity|file|meet(?:ing|up-join)|message|task|team)/)",
-          v2: String.raw`^msteams://teams\.(?:microsoft\.com|live\.com|cloud\.microsoft)/(?:meet/|l/(?:app|call|channel|chat|entity|file|meet(?:ing|up-join)|message|task|team)/)`,
-        },
-        describe:
-          "Regular expressions for Microsoft Teams protocol links (v1 and v2).",
-        type: "object",
-        fields: {
-          "v1": {
-            type: "string",
-            describe:
-              "Regular expression matching legacy msteams: scheme protocol links.",
-          },
-          "v2": {
-            type: "string",
-            describe:
-              "Regular expression matching host-based msteams:// scheme protocol links.",
-          },
-        },
-        applyMode: "restart",
-      },
       url: {
-        default: "https://teams.cloud.microsoft",
-        describe: "Microsoft Teams URL",
+        default: "https://outlook.office.com/mail/",
+        describe: "Microsoft Outlook URL",
         type: "string",
         applyMode: "restart",
         deprecated: "use app.url instead",
@@ -722,251 +460,16 @@ module.exports = {
       },
       media: {
         default: {
-          microphone: {
-            disableAutogain: false,
-            speakingIndicator: false,
-            ignoreSystemMute: false,
-            overrideConstraints: { enabled: false },
-          },
-          camera: {
-            resolution: { enabled: false, mode: "remove" },
-            autoAdjustAspectRatio: { enabled: false },
-          },
-          video: { menuEnabled: false },
-          showStatusOnDockIcon: false,
           macPerformanceMode: true,
-          preventDeviceSwitching: false,
         },
         describe:
-          "Media settings for microphone, camera, and video. showStatusOnDockIcon: overlay the user presence status on the Dock icon on macOS. macPerformanceMode: on macOS, force-enable native hardware/rendering optimizations (Metal ANGLE, GPU rasterization, hardware WebRTC codecs) at startup; defaults to true, set false to opt out without disabling the GPU entirely. preventDeviceSwitching: prevent automatic audio/video device switching by blocking device change notifications.",
+          "Media and rendering settings. macPerformanceMode: on macOS, force-enable native hardware/rendering optimizations (Metal ANGLE, GPU rasterization) at startup; defaults to true, set false to opt out without disabling the GPU entirely.",
         type: "object",
         fields: {
-          "microphone.disableAutogain": {
-            type: "boolean",
-            describe:
-              "Disable microphone auto gain control so Teams does not automatically adjust microphone volume levels.",
-          },
-          "microphone.speakingIndicator": {
-            type: "boolean",
-            describe:
-              "Enable a visual overlay showing microphone state during calls (speaking/silent/muted) with WebRTC-based call state detection.",
-          },
-          "microphone.ignoreSystemMute": {
-            type: "boolean",
-            describe:
-              "Stop Teams' mute button from following the operating system microphone mute on Linux. Chromium reports the OS capture-source mute to the page as a track mute event and Teams mirrors it onto its own button; enable this to keep the Teams button where you left it and rely solely on your system/hotkey mute (which still cuts the transmitted audio). Remote participants' mute state is unaffected.",
-          },
-          "microphone.overrideConstraints.enabled": {
-            type: "boolean",
-            describe:
-              "Enable overriding the microphone audio constraints Teams requests via getUserMedia; only the keys you set are overridden.",
-          },
-          "microphone.overrideConstraints.echoCancellation": {
-            type: "boolean",
-            describe:
-              "When set, overrides getUserMedia's echoCancellation constraint; omit to leave it untouched.",
-          },
-          "microphone.overrideConstraints.noiseSuppression": {
-            type: "boolean",
-            describe:
-              "When set, overrides getUserMedia's noiseSuppression constraint; omit to leave it untouched.",
-          },
-          "microphone.overrideConstraints.autoGainControl": {
-            type: "boolean",
-            describe:
-              "When set, overrides getUserMedia's autoGainControl constraint (takes precedence over disableAutogain); omit to leave it untouched.",
-          },
-          "microphone.overrideConstraints.channelCount": {
-            type: "number",
-            describe:
-              "When set, pins the microphone channel count (typically 1 or 2); omit to leave it untouched.",
-          },
-          "microphone.overrideConstraints.sampleRate": {
-            type: "number",
-            describe:
-              "When set, pins the microphone sample rate in Hz (e.g. 48000); omit to leave it untouched.",
-          },
-          "camera.resolution.enabled": {
-            type: "boolean",
-            describe: "Enable camera resolution control.",
-          },
-          "camera.resolution.mode": {
-            type: "string",
-            describe:
-              "Resolution mode: remove strips Teams' constraints to allow native camera resolution, override sets a specific width/height.",
-            choices: ["remove", "override"],
-          },
-          "camera.resolution.width": {
-            type: "number",
-            describe: "Target camera width when mode is override.",
-          },
-          "camera.resolution.height": {
-            type: "number",
-            describe: "Target camera height when mode is override.",
-          },
-          "camera.autoAdjustAspectRatio.enabled": {
-            type: "boolean",
-            describe:
-              "Reapply proper aspect ratio constraints to fix camera video stretching when moving Teams between monitors with different orientations.",
-          },
-          "video.menuEnabled": {
-            type: "boolean",
-            describe:
-              "Enable the menu entry for controlling video elements (PiP mode, video controls).",
-          },
-          "showStatusOnDockIcon": {
-            type: "boolean",
-            describe:
-              "Overlay the user presence status on the Dock icon on macOS.",
-          },
           "macPerformanceMode": {
             type: "boolean",
             describe:
-              "On macOS, force-enable native hardware/rendering optimizations (Metal ANGLE, GPU rasterization, hardware WebRTC codecs) at startup; set false to opt out without disabling the GPU entirely.",
-          },
-          // preventDeviceSwitching is documented in the option's `describe`
-          // above; see the note in the download.fields block on why it isn't a
-          // per-leaf entry.
-        },
-        applyMode: "restart",
-      },
-      mqtt: {
-        default: {
-          enabled: false,
-          brokerUrl: "",
-          username: "",
-          password: "",
-          clientId: "teams-for-linux",
-          topicPrefix: "teams",
-          statusTopic: "status",
-          commandTopic: "",
-          statusCheckInterval: 10000,
-          homeAssistant: {
-            enabled: false,
-            discoveryPrefix: "homeassistant",
-            deviceName: "Teams for Linux",
-          },
-          mediaTopics: {
-            inCall: "in-call",
-            incomingCall: "incoming-call",
-            meetingStarted: "meeting-started",
-            camera: "camera",
-            microphone: "microphone",
-            microphoneControl: "microphone/control",
-            screenSharing: "screen-sharing",
-          },
-          meetingStartDetection: {
-            enabled: false,
-            patterns: ["meeting started", "started the meeting"],
-            resetSeconds: 10,
-          },
-        },
-        describe: "MQTT configuration for publishing Teams status updates and receiving action commands",
-        type: "object",
-        fields: {
-          "enabled": {
-            type: "boolean",
-            describe:
-              "Enable the MQTT integration (status publishing and command reception).",
-          },
-          "brokerUrl": {
-            type: "string",
-            describe:
-              "MQTT broker URL, e.g. mqtt://host:1883 or mqtts://host:8883 for TLS.",
-          },
-          "username": {
-            type: "string",
-            describe: "MQTT username for authentication (optional).",
-          },
-          "password": {
-            type: "string",
-            describe: "MQTT password for authentication (optional).",
-          },
-          "clientId": {
-            type: "string",
-            describe: "Unique MQTT client identifier.",
-          },
-          "topicPrefix": {
-            type: "string",
-            describe: "Topic prefix for all MQTT messages.",
-          },
-          "statusTopic": {
-            type: "string",
-            describe:
-              "Topic name for outbound status messages, combined with topicPrefix.",
-          },
-          "commandTopic": {
-            type: "string",
-            describe:
-              "Topic name for receiving inbound commands; leave empty to disable (status-only mode).",
-          },
-          "statusCheckInterval": {
-            type: "number",
-            describe:
-              "Polling interval in milliseconds for the status detection fallback.",
-          },
-          "homeAssistant.enabled": {
-            type: "boolean",
-            describe:
-              "Enable Home Assistant MQTT auto-discovery so entities are created automatically.",
-          },
-          "homeAssistant.discoveryPrefix": {
-            type: "string",
-            describe: "MQTT discovery topic prefix used by Home Assistant.",
-          },
-          "homeAssistant.deviceName": {
-            type: "string",
-            describe: "Device name shown in Home Assistant.",
-          },
-          "meetingStartDetection.enabled": {
-            type: "boolean",
-            describe:
-              "Enable detection of a scheduled meeting starting (Teams' meeting-start banner/toast), published as a pulse to the meeting-started topic (experimental, see issue #2587).",
-          },
-          "meetingStartDetection.patterns": {
-            type: "array",
-            describe:
-              "Case-insensitive regular expressions for the DOM fallback, matched against banner/toast text. Primary detection uses Teams' internal command stream and needs no patterns; the defaults only cover English Teams, override for other UI languages.",
-          },
-          "meetingStartDetection.resetSeconds": {
-            type: "number",
-            describe:
-              "Seconds after which the meeting-started topic resets to false if you never join. Joining the call resets it immediately, whichever comes first.",
-          },
-        },
-        applyMode: "restart",
-      },
-      quickChat: {
-        default: {
-          enabled: false,
-        },
-        describe: "Quick Chat configuration for quick access to chat contacts and inline messaging via Graph API",
-        type: "object",
-        fields: {
-          "enabled": {
-            type: "boolean",
-            describe:
-              "Enable the Quick Chat feature for quick contact search and chat access.",
-          },
-          "shortcut": {
-            type: "string",
-            describe:
-              "Keyboard shortcut to toggle the Quick Chat modal (e.g. CommandOrControl+Alt+Q); unset by default.",
-          },
-        },
-        applyMode: "restart",
-      },
-      graphApi: {
-        default: {
-          enabled: false,
-        },
-        describe: "Microsoft Graph API integration for enhanced Teams functionality (calendar, user profile, etc.)",
-        type: "object",
-        fields: {
-          "enabled": {
-            type: "boolean",
-            describe:
-              "Enable the Microsoft Graph API integration for calendar and mail access.",
+              "On macOS, force-enable native hardware/rendering optimizations (Metal ANGLE, GPU rasterization) at startup; set false to opt out without disabling the GPU entirely.",
           },
         },
         applyMode: "restart",
@@ -1002,7 +505,7 @@ module.exports = {
             days: 400
           }
         },
-        describe: "Authentication configuration. auth.webauthn.enabled turns on hardware security key support on Linux (requires fido2-tools). auth.webauthn.debug enables verbose diagnostic logs, intended for beta testers only. auth.webauthn.extraOrigins adds exact https sign-in origins allowed to use hardware keys, for federated tenants whose FIDO2 prompt is served off the Microsoft login hosts. auth.reauthRecovery.enabled opts into the in-app re-authentication recovery feature and is off by default; while off, renderer auth-failure signals are ignored and Teams' own stale 'sign in again' banner is left untouched (you re-authenticate by relaunching, as before this feature existed). When on, a reliable MSAL InteractionRequired signal automatically clears stale auth state and reloads to force a fresh interactive login, and clicking the stale 'sign in again' banner is intercepted to recover in-app instead of opening the login popup externally. Uncaught Teams worker 'UPR' errors are noisy and fire on healthy sessions, so they never trigger an automatic reload on their own; they only help recognise a genuinely broken session for the banner interception. Interception only happens when the session has emitted a trusted auth-failure signal within the last hour, so login popups from healthy flows (initial sign-in, consent and step-up prompts, adding an account) are never diverted. During an active call, recovery is never run silently (it would end the call): the user is asked whether to sign in now, after the call, or not at all. auth.clientCertificate.pinDialog.enabled (Linux only) shows a PIN dialog for smartcard / PKCS#11 client certificates and is off by default. auth.webLogin.* pre-fills the Microsoft/federated web sign-in page so you don't retype credentials each launch: auth.webLogin.user pre-fills the email/account field, auth.webLogin.passwordCommand runs a shell command (e.g. 'pass show teams') and pre-fills its first stdout line into the password field (the app stores no secret), auth.webLogin.autoSubmit clicks through the steps, auth.webLogin.verifyMethod clicks the matching option on the MFA 'Verify your identity' page (e.g. 'Text'), and auth.webLogin.extraHosts adds login hosts beyond the Microsoft defaults. All off/empty by default. Distinct from ssoBasicAuth*, which drive the native HTTP Basic/NTLM dialog, not the web form.",
+        describe: "Authentication configuration. auth.webauthn.enabled turns on hardware security key support on Linux (requires fido2-tools). auth.webauthn.debug enables verbose diagnostic logs, intended for beta testers only. auth.webauthn.extraOrigins adds exact https sign-in origins allowed to use hardware keys, for federated tenants whose FIDO2 prompt is served off the Microsoft login hosts. auth.reauthRecovery.enabled opts into in-app re-authentication recovery and is off by default. When on, a reliable MSAL InteractionRequired signal from Outlook or the Microsoft login pages automatically clears stale auth state and reloads to force a fresh interactive login, and a Microsoft login popup opened within an hour of such a signal is intercepted to recover in-app instead of opening externally; login popups from healthy flows (initial sign-in, consent and step-up prompts, adding an account) are never diverted. auth.clientCertificate.pinDialog.enabled (Linux only) shows a PIN dialog for smartcard / PKCS#11 client certificates and is off by default. auth.webLogin.* pre-fills the Microsoft/federated web sign-in page so you don't retype credentials each launch: auth.webLogin.user pre-fills the email/account field, auth.webLogin.passwordCommand runs a shell command (e.g. 'pass show outlook') and pre-fills its first stdout line into the password field (the app stores no secret), auth.webLogin.autoSubmit clicks through the steps, auth.webLogin.verifyMethod clicks the matching option on the MFA 'Verify your identity' page (e.g. 'Text'), and auth.webLogin.extraHosts adds login hosts beyond the Microsoft defaults. All off/empty by default. auth.keepMsalCacheEncryptionCookie keeps the MSAL cache encryption cookie across restarts. Distinct from ssoBasicAuth*, which drive the native HTTP Basic/NTLM dialog, not the web form.",
         type: "object",
         fields: {
           "intune.enabled": {
@@ -1046,7 +549,7 @@ module.exports = {
           "webLogin.passwordCommand": {
             type: "string",
             describe:
-              "Command whose first stdout line is pre-filled into the web sign-in password field. Runs in a shell; use your own password manager (e.g. 'pass show teams'). Empty disables it. The app stores no secret.",
+              "Command whose first stdout line is pre-filled into the web sign-in password field. Runs in a shell; use your own password manager (e.g. 'pass show outlook'). Empty disables it. The app stores no secret.",
           },
           "webLogin.extraHosts": {
             type: "array",
@@ -1094,13 +597,13 @@ module.exports = {
         default: {
           xwaylandOptimizations: false,
         },
-        describe: "Wayland display server configuration. xwaylandOptimizations: keeps GPU enabled and skips fake media UI flag under XWayland (may fix camera issues but can break screen sharing)",
+        describe: "Wayland display server configuration. xwaylandOptimizations: keeps GPU composition enabled when running under XWayland (by default it is disabled on Wayland to prevent blank windows)",
         type: "object",
         fields: {
           "xwaylandOptimizations": {
             type: "boolean",
             describe:
-              "Keep GPU enabled and skip the fake media UI flag under XWayland; may fix camera issues but can break screen sharing.",
+              "Keep GPU composition enabled when running under XWayland.",
           },
         },
         applyMode: "restart",
@@ -1155,102 +658,32 @@ module.exports = {
         },
         applyMode: "restart",
       },
-      customBackground: {
-        default: {
-          enabled: false,
-          serviceBaseUrl: "http://localhost",
-          configFetchInterval: 0,
-        },
-        describe:
-          "Custom background image configuration. Replaces the deprecated isCustomBackgroundEnabled, customBGServiceBaseUrl and customBGServiceConfigFetchInterval options.",
-        type: "object",
-        fields: {
-          "enabled": {
-            type: "boolean",
-            describe: "A flag indicates whether to enable custom background or not",
-          },
-          "serviceBaseUrl": {
-            type: "string",
-            describe: "Base URL of the server which provides custom background images",
-          },
-          "configFetchInterval": {
-            type: "number",
-            describe: "A numeric value in seconds as poll interval to download background service config download",
-          },
-        },
-        applyMode: "restart",
-      },
       urlHandling: {
         default: {
           defaultHandler: "",
-          meetupJoinRegEx: "^https://teams\\.(?:microsoft\\.com|live\\.com|cloud\\.microsoft)/(v2/\\?meetingjoin=|meet/|l/(?:app|call|channel|chat|entity|file|meet(?:ing|up-join)|message|task|team)/)",
-          openMeetupJoinInApp: true,
         },
         describe:
-          "How the app decides which URLs it opens itself and which it hands to the desktop. Replaces the deprecated defaultURLHandler, meetupJoinRegEx and onNewWindowOpenMeetupJoinUrlInApp options.",
+          "How the app hands URLs to the desktop. Replaces the deprecated defaultURLHandler option.",
         type: "object",
         fields: {
           "defaultHandler": {
             type: "string",
             describe: "Default application to be used to open the HTTP URLs",
           },
-          "meetupJoinRegEx": {
-            type: "string",
-            describe: "Regex for Teams meetup-join and related links",
-          },
-          "openMeetupJoinInApp": {
-            type: "boolean",
-            describe: "Open meetupJoinRegEx URLs in the app instead of the default browser",
-          },
-        },
-        applyMode: "restart",
-      },
-      incomingCalls: {
-        default: {
-          toast: false,
-          command: null,
-          commandArgs: [],
-        },
-        describe:
-          "Incoming call notification and external command configuration. Replaces the deprecated enableIncomingCallToast, incomingCallCommand and incomingCallCommandArgs options.",
-        type: "object",
-        fields: {
-          "toast": {
-            type: "boolean",
-            describe: "Enable incoming call toast",
-          },
-          "command": {
-            type: "string",
-            describe: "Command to execute on an incoming call. (caution: \"~\" in path is not supported)",
-          },
-          "commandArgs": {
-            type: "array",
-            describe: "Arguments for the incoming call command.",
-          },
         },
         applyMode: "restart",
       },
       appearance: {
         default: {
-          cssName: "",
           cssLocation: "",
-          followSystemTheme: false,
         },
         describe:
-          "Custom CSS and theme configuration. Replaces the deprecated customCSSName, customCSSLocation and followSystemTheme options.",
+          "Custom CSS configuration. Replaces the deprecated customCSSLocation option.",
         type: "object",
         fields: {
-          "cssName": {
-            type: "string",
-            describe: "custom CSS name for the packaged available css files. Currently those are: \"compactDark\", \"compactLight\", \"tweaks\", \"condensedDark\" and \"condensedLight\" ",
-          },
           "cssLocation": {
             type: "string",
             describe: "custom CSS styles file location",
-          },
-          "followSystemTheme": {
-            type: "boolean",
-            describe: "Follow the operating-system dark/light theme preference. Default is false; set true to drive Teams's theme from the OS preference.",
           },
         },
         applyMode: "restart",
@@ -1263,10 +696,9 @@ module.exports = {
           chromeUserAgent: `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome} Safari/537.36`,
           emulateWindowsChromium: false,
           spellCheckerLanguages: [],
-          disableTimestampOnCopy: false,
         },
         describe:
-          "Platform emulation and OS integration configuration. Replaces the deprecated chromeUserAgent, emulateWinChromiumPlatform, spellCheckerLanguages and disableTimestampOnCopy options.",
+          "Platform emulation and OS integration configuration. Replaces the deprecated chromeUserAgent, emulateWinChromiumPlatform and spellCheckerLanguages options.",
         type: "object",
         fields: {
           "chromeUserAgent": {
@@ -1281,21 +713,17 @@ module.exports = {
             type: "array",
             describe: "Array of languages to use with Electron's spell checker (experimental)",
           },
-          "disableTimestampOnCopy": {
-            type: "boolean",
-            describe: "Controls whether timestamps are included when copying messages in chats",
-          },
         },
         applyMode: "restart",
       },
       app: {
         default: {
-          title: "Microsoft Teams",
-          url: "https://teams.cloud.microsoft",
-          partition: "persist:teams-4-linux",
+          title: "Microsoft Outlook",
+          url: "https://outlook.office.com/mail/",
+          partition: "persist:outlook-4-linux",
         },
         describe:
-          "Core application identity and the Teams URL it loads. Replaces the deprecated appTitle, url and partition options.",
+          "Core application identity and the Outlook URL it loads. Replaces the deprecated appTitle, url and partition options.",
         type: "object",
         fields: {
           "title": {
@@ -1304,7 +732,7 @@ module.exports = {
           },
           "url": {
             type: "string",
-            describe: "Microsoft Teams URL",
+            describe: "Microsoft Outlook URL",
           },
           "partition": {
             type: "string",

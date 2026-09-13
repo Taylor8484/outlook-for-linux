@@ -1,13 +1,12 @@
 const { defineConfig } = require('@playwright/test');
 
-// Session directories contain live Microsoft auth tokens stored in plaintext
-// (--password-store=basic). Never commit session data or use a path outside
-// a gitignored directory. The Docker workflow stores sessions in the
-// gitignored tests/cross-distro/session/ directory.
+// Session directories contain live Microsoft auth tokens. Never commit session
+// data or use a path inside the repository.
 if (!process.env.E2E_SESSION_DIR) {
   throw new Error(
-    'E2E_SESSION_DIR must be set to a gitignored directory containing a ' +
-    'logged-in session. Create one with: cd tests/cross-distro && ./run.sh ubuntu x11 --login'
+    'E2E_SESSION_DIR must be set to a directory outside the repository containing a ' +
+    'logged-in session. Create one by running the app with ' +
+    'E2E_USER_DATA_DIR=<dir> npm start and signing in, then pass the same <dir>.'
   );
 }
 

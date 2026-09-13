@@ -1,8 +1,13 @@
 const { shell } = require("electron");
 const buildProfilesMenu = require("./profilesMenu");
 
+// Menu accelerators are registered on the window while the menu is attached,
+// so they take precedence over the page. Outlook on the web binds Ctrl+R
+// (reply), Ctrl+D (delete) and Ctrl+Q (mark as read), so Refresh, DevTools and
+// Quit use browser-style keys instead of the Ctrl+letter chords teams-for-linux
+// uses.
 exports = module.exports = (Menus) => ({
-  label: "Teams for Linux",
+  label: "Outlook for Linux",
   submenu: [
     {
       label: "Open",
@@ -10,26 +15,8 @@ exports = module.exports = (Menus) => ({
       click: () => Menus.open(),
     },
     {
-      label: "Join Meeting",
-      accelerator: "ctrl+J",
-      click: () => Menus.joinMeeting(),
-    },
-    {
-      label: "Return to Teams",
-      click: () => Menus.returnToTeams(),
-    },
-    ...(Menus.configGroup.startupConfig.quickChat?.enabled
-      ? [
-          {
-            label: "Quick Chat",
-            accelerator: Menus.configGroup.startupConfig.quickChat?.shortcut || undefined,
-            click: () => Menus.showQuickChat(),
-          },
-        ]
-      : []),
-    {
       label: "Refresh",
-      accelerator: "ctrl+R",
+      accelerator: "F5",
       click: () => Menus.reload(),
     },
     ...(process.env.APPIMAGE
@@ -50,7 +37,7 @@ exports = module.exports = (Menus) => ({
       submenu: [
         {
           label: "Open DevTools",
-          accelerator: "ctrl+D",
+          accelerator: "F12",
           click: () => Menus.debug(),
         },
         {
@@ -76,15 +63,7 @@ exports = module.exports = (Menus) => ({
       label: "About",
       click: () => Menus.about(),
     },
-    getHelpMenu(Menus),
-    ...(Menus.configGroup.startupConfig.media?.video?.menuEnabled
-      ? [
-          {
-            type: "separator",
-          },
-          getVideoMenu(Menus),
-        ]
-      : []),
+    getHelpMenu(),
     {
       type: "separator",
     },
@@ -94,7 +73,7 @@ exports = module.exports = (Menus) => ({
     },
     {
       label: "Quit",
-      accelerator: "ctrl+Q",
+      accelerator: "ctrl+shift+Q",
       click: () => Menus.quit(),
     },
   ],
@@ -104,17 +83,6 @@ function getSettingsMenu(Menus) {
   return {
     label: "Settings",
     submenu: [
-      {
-        label: "Save",
-        click: () => Menus.saveSettings(),
-      },
-      {
-        label: "Restore",
-        click: () => Menus.restoreSettings(),
-      },
-      {
-        type: "separator",
-      },
       // The startup warning names the deprecated options; this turns that into
       // something the user can act on in one click (ADR-025, #2913).
       //
@@ -181,14 +149,6 @@ function getNotificationsMenu(Menus) {
         click: () => Menus.toggleDisableNotificationSound(),
       },
       {
-        label: "Disable Sound when Not Available (e.g: busy, in a call)",
-        type: "checkbox",
-        checked:
-          Menus.configGroup.startupConfig
-            .disableNotificationSoundIfNotAvailable,
-        click: () => Menus.toggleDisableNotificationSoundIfNotAvailable(),
-      },
-      {
         label: "Disables Window Flash on New Notifications",
         type: "checkbox",
         checked: Menus.configGroup.startupConfig.disableNotificationWindowFlash,
@@ -233,55 +193,21 @@ function getNotificationsMenu(Menus) {
   };
 }
 
-function getHelpMenu(Menus) {
+function getHelpMenu() {
   return {
     label: "Help",
     submenu: [
       {
-        label: "Teams for Linux Documentation",
-        click: () => Menus.showDocumentation(),
-      },
-      {
-        type: "separator",
-      },
-      {
-        label: "Online Documentation",
+        label: "Outlook on the Web Help",
         click: () =>
-          shell.openExternal("https://support.office.com/en-us/teams"),
+          shell.openExternal("https://support.microsoft.com/outlook"),
       },
       {
         label: "Github Project",
         click: () =>
           shell.openExternal(
-            "https://github.com/IsmaelMartinez/teams-for-linux"
+            "https://github.com/Taylor8484/outlook-for-linux"
           ),
-      },
-      {
-        label: "Microsoft Teams Support",
-        click: () =>
-          shell.openExternal(
-            "https://answers.microsoft.com/en-us/msteams/forum"
-          ),
-      },
-    ],
-  };
-}
-
-function getVideoMenu(Menus) {
-  return {
-    label: "Video",
-    submenu: [
-      {
-        label: "Force enable PiP mode for shared screen",
-        click: () => {
-          Menus.forcePip();
-        },
-      },
-      {
-        label: "Force toggle controls for all video elements",
-        click: () => {
-          Menus.forceVideoControls();
-        },
       },
     ],
   };

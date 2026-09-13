@@ -30,7 +30,7 @@ are bounced back to the renderer via `add-profile-error` so the user can
 fix the input without losing the rest of the form.
 
 The submit/cancel channels follow the same single-instance dispatch pattern
-as `JoinMeetingDialog` — `ipcMain.on` listeners are registered exactly once
+as `ManageProfileDialog` — `ipcMain.on` listeners are registered exactly once
 and route through whichever dialog is currently visible.
 
 ## Lifecycle

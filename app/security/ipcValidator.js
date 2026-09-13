@@ -1,43 +1,22 @@
 /**
  * IPC Security Validation Module
- * 
+ *
  * Provides security validation for IPC channels as a compensating control
  * for disabled contextIsolation and sandbox features.
  */
 
-// Allowlist of legitimate IPC channels used by Teams for Linux
+// Allowlist of legitimate IPC channels used by Outlook for Linux
 const allowedChannels = new Set([
   // Core application channels
   'config-file-changed',
   'config-changed',
   'get-config',
-  'get-system-idle-state',
   'get-app-version',
-  
+
   // Zoom and display controls
   'get-zoom-level',
   'save-zoom-level',
-  
-  // Screen sharing and desktop capture (sorted alphabetically)
-  'cancel-desktop-media',
-  'choose-desktop-media',
-  'close-view',
-  'desktop-capturer-get-sources',
-  'get-screen-share-screen',
-  'get-screen-share-stream',
-  'get-screen-sharing-displays',
-  'get-screen-sharing-status',
-  'resize-preview-window',
-  // main → renderer only (webContents.postMessage); not gated by this validator,
-  // listed here so the allowlist stays authoritative per CLAUDE.md.
-  'screen-share-port',
-  'screen-sharing-started',
-  'screen-sharing-stopped',
-  'select-source',
-  'selected-source',
-  'source-selected',
-  'stop-screen-sharing-from-thumbnail',
-  
+
   // Notifications and user interaction
   'play-notification-sound',
   'show-notification',
@@ -49,66 +28,14 @@ const allowedChannels = new Set([
   'notification-clicked',
   'notification-show-toast',
   'notification-toast-click',
-  'user-status-changed',
   'set-badge-count',
   'tray-update',
-  'dock-icon-update',
 
-  // Call management (sorted alphabetically)
-  'call-connected',
-  'call-disconnected',
-  'incoming-call-action',
-  'incoming-call-created',
-  'incoming-call-ended',
-  'incoming-call-toast-ready',
-
-  // Media status (camera/microphone)
-  'camera-state-changed',
-  'microphone-state-changed',
-
-  // Scheduled-meeting-start toast detection for MQTT (#2587)
-  'meeting-started',
-  
   // Authentication and forms
   'submitForm',
-  
-  // Settings management
-  'get-teams-settings',
-  'set-teams-settings',
-  
-  // Custom backgrounds
-  'get-custom-bg-list',
 
-  // Custom stickers
-  'get-sticker-list',
-  'import-sticker-url',
-  'delete-sticker',
-  
   // Connection management
   'offline-retry',
-
-  // Navigation controls
-  'navigate-back',
-  'navigate-forward',
-  'get-navigation-state',
-  'navigation-state-changed',
-
-  // Microsoft Graph API integration
-  'graph-api-get-user-profile',
-  'graph-api-get-calendar-events',
-  'graph-api-get-calendar-view',
-  'graph-api-create-calendar-event',
-  'graph-api-get-mail-messages',
-  'graph-api-search-people',
-  'graph-api-send-chat-message',
-
-  // Join meeting dialog
-  'join-meeting-submit',
-  'join-meeting-cancel',
-
-  // Quick Chat modal
-  'quick-chat:show',
-  'quick-chat:hide',
 
   // Renderer-side error forwarding (registered in app/browser/preload.js)
   'unhandled-rejection',
@@ -125,8 +52,7 @@ const allowedChannels = new Set([
   'profile-update',
   'profile-remove',
 
-  // Add-profile dialog (Phase 1c.2). Same `ipcMain.on` shape as
-  // `join-meeting-*`; submit forwards the form record to
+  // Add-profile dialog (Phase 1c.2). Submit forwards the form record to
   // `ProfilesManager.add()`, cancel destroys the dialog.
   'add-profile-submit',
   'add-profile-cancel',

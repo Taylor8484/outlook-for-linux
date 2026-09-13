@@ -7,11 +7,16 @@ import { join } from 'node:path';
 // flag-toggle test). Keeps the launch/discover/cleanup boilerplate in
 // one place so each spec can stay focused on its assertions.
 
-const TEAMS_HOSTNAMES = new Set([
-  'teams.cloud.microsoft',
-  'teams.microsoft.com',
-  'teams.live.com',
+// Outlook web app hosts plus the Microsoft login hosts an unauthenticated
+// launch redirects to. Keep in sync with OUTLOOK_DOMAINS in
+// app/mainAppWindow/index.js.
+const APP_HOSTNAMES = new Set([
+  'outlook.office.com',
+  'outlook.office365.com',
+  'outlook.cloud.microsoft',
+  'outlook.live.com',
   'login.microsoftonline.com',
+  'login.live.com',
 ]);
 
 export const PROFILE_IPC_CHANNELS = [
@@ -77,14 +82,14 @@ export async function startApp({ prefix, config, allowEval = false }) {
 }
 
 /**
- * Find the main Teams window in an electronApp by hostname match. Returns
- * undefined if no window has navigated to a Teams or Microsoft login URL.
+ * Find the main app window in an electronApp by hostname match. Returns
+ * undefined if no window has navigated to an Outlook or Microsoft login URL.
  */
-export function findMainTeamsWindow(electronApp) {
+export function findMainAppWindow(electronApp) {
   return electronApp.windows().find((w) => {
     const url = w.url();
     try {
-      return TEAMS_HOSTNAMES.has(new URL(url).hostname);
+      return APP_HOSTNAMES.has(new URL(url).hostname);
     } catch {
       return false;
     }
@@ -150,11 +155,14 @@ export async function getEventHandlerCounts(electronApp, channels) {
  */
 export async function getContentViewChildBounds(electronApp) {
   return await electronApp.evaluate(({ BrowserWindow }) => {
+    // Serialized into the main process, so it cannot reference APP_HOSTNAMES.
     const hosts = new Set([
-      'teams.cloud.microsoft',
-      'teams.microsoft.com',
-      'teams.live.com',
+      'outlook.office.com',
+      'outlook.office365.com',
+      'outlook.cloud.microsoft',
+      'outlook.live.com',
       'login.microsoftonline.com',
+      'login.live.com',
     ]);
     const isMain = (w) => {
       try {

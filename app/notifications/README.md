@@ -1,16 +1,15 @@
 # Notification Service Module
 
-Handles native desktop notifications and notification sounds for Teams.
+Handles native desktop notifications and notification sounds for Outlook.
 
 ## NotificationService Class
 
-Manages OS notifications and sound playback based on user status and configuration.
+Manages OS notifications and sound playback based on configuration.
 
 **Dependencies:**
 - `soundPlayer` - Audio player instance (NodeSound)
 - `config` - Application configuration
 - `mainWindow` - Main application window
-- `getUserStatus` - Function returning current user status
 
 **IPC Channels:**
 - `show-notification` - Display native notification
@@ -18,12 +17,10 @@ Manages OS notifications and sound playback based on user status and configurati
 
 **Usage:**
 ```javascript
-const getUserStatus = () => userStatus;
 const notificationService = new NotificationService(
   player,
   config,
-  mainWindow,
-  getUserStatus
+  mainWindow
 );
 notificationService.initialize();
 ```
@@ -31,9 +28,6 @@ notificationService.initialize();
 **Sound Playback:**
 Sound is controlled by:
 - `config.disableNotificationSound` - Global disable
-- `config.disableNotificationSoundIfNotAvailable` - Disable when user not available
-- Current user status (injected via getUserStatus)
 
 **Notification Types:**
 - `new-message` - Plays new_message.wav
-- `meeting-started` - Plays meeting_started.wav

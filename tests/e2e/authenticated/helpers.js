@@ -57,21 +57,22 @@ async function launchAuthenticatedApp(sessionDir) {
 }
 
 /**
- * Wait for the main Teams window (not the toast/notification window).
+ * Wait for the main Outlook window (not the toast/notification window).
  * Returns the Page object for the main window.
  */
-async function waitForTeamsWindow(electronApp) {
+async function waitForAppWindow(electronApp) {
   const isDocker = process.env.DOCKER_TEST === 'true';
   await electronApp.firstWindow({ timeout: isDocker ? 60000 : 30000 });
 
-  const teamsHostnames = new Set([
-    'teams.cloud.microsoft',
-    'teams.microsoft.com',
-    'teams.live.com',
+  const appHostnames = new Set([
+    'outlook.office.com',
+    'outlook.office365.com',
+    'outlook.cloud.microsoft',
+    'outlook.live.com',
   ]);
 
-  // Poll for the Teams window instead of a fixed delay. The app may create
-  // multiple windows (toast, login redirect) before the main Teams window
+  // Poll for the Outlook window instead of a fixed delay. The app may create
+  // multiple windows (toast, login redirect) before the main Outlook window
   // is ready, so we check repeatedly until it appears or we time out.
   const timeout = isDocker ? 45000 : 22000;
   const pollEnd = Date.now() + timeout;
@@ -80,7 +81,7 @@ async function waitForTeamsWindow(electronApp) {
     const mainWindow = windows.find(w => {
       try {
         const hostname = new URL(w.url()).hostname;
-        return teamsHostnames.has(hostname);
+        return appHostnames.has(hostname);
       } catch {
         return false;
       }
@@ -118,4 +119,4 @@ async function closeApp(electronApp) {
   }
 }
 
-module.exports = { launchAuthenticatedApp, waitForTeamsWindow, closeApp };
+module.exports = { launchAuthenticatedApp, waitForAppWindow, closeApp };

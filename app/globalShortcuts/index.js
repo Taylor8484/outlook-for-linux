@@ -1,8 +1,8 @@
 /**
  * Global Shortcuts Module
  *
- * Registers system-wide keyboard shortcuts that forward events to Teams.
- * This allows Teams' built-in shortcuts to work even when the app is not focused.
+ * Registers system-wide keyboard shortcuts that forward events to Outlook.
+ * This allows Outlook's built-in shortcuts to work even when the app is not focused.
  */
 
 const { globalShortcut } = require("electron");

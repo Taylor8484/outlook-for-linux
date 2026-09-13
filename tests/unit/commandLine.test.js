@@ -70,7 +70,7 @@ describe('CommandLineManager macOS performance gate', () => {
       'forces ANGLE Metal by default',
     );
     assert.ok(hasSwitch(switches, 'enable-gpu-rasterization'));
-    assert.ok(hasSwitch(switches, 'enable-webrtc-hw-encoding'));
+    assert.ok(!hasSwitch(switches, 'enable-webrtc-hw-encoding'), 'no call-only WebRTC switch');
   });
 
   it('applies the larger V8 heap only on arm64', () => {

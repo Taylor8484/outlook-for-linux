@@ -35,7 +35,7 @@ function cleanupElectronMock() {
 }
 
 function makeManager() {
-  return new CacheManager({ partition: 'persist:teams-4-linux' });
+  return new CacheManager({ partition: 'persist:outlook-4-linux' });
 }
 
 describe('CacheManager directory scanning', () => {

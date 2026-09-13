@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { launchAuthenticatedApp, waitForTeamsWindow, closeApp } from './helpers.js';
+import { launchAuthenticatedApp, waitForAppWindow, closeApp } from './helpers.js';
 
 test.describe('Window management', () => {
   let electronApp;
@@ -12,7 +12,7 @@ test.describe('Window management', () => {
     const sessionDir = testInfo.project.use.sessionDir;
     electronApp = await launchAuthenticatedApp(sessionDir);
 
-    const mainWindow = await waitForTeamsWindow(electronApp);
+    const mainWindow = await waitForAppWindow(electronApp);
     expect(mainWindow).toBeTruthy();
 
     // Use JavaScript to get the actual window dimensions since
@@ -30,15 +30,15 @@ test.describe('Window management', () => {
     const sessionDir = testInfo.project.use.sessionDir;
     electronApp = await launchAuthenticatedApp(sessionDir);
 
-    const mainWindow = await waitForTeamsWindow(electronApp);
+    const mainWindow = await waitForAppWindow(electronApp);
     expect(mainWindow).toBeTruthy();
 
-    // Teams maintains constant WebSocket activity so networkidle never
+    // The web app keeps long-lived connections open so networkidle never
     // triggers. Use domcontentloaded instead.
     await mainWindow.waitForLoadState('domcontentloaded', { timeout: 60000 });
 
     const url = mainWindow.url();
-    expect(url).toContain('teams');
+    expect(url).toContain('outlook');
 
     const crashCount = await mainWindow.locator('text=/something went wrong/i').count();
     expect(crashCount).toBe(0);

@@ -6,7 +6,7 @@ Handles loading configuration from `config.json` and parsing command-line argume
 
 View all available options:
 ```bash
-teams-for-linux --help
+outlook-for-linux --help
 ```
 
 ## Configuration
@@ -15,5 +15,5 @@ See [`../../docs-site/docs/configuration.md`](../../docs-site/docs/configuration
 
 - Configuration file locations and precedence
 - All available options with defaults
-- Feature-specific settings (custom backgrounds, certificates, cache management, etc.)
+- Feature-specific settings (certificates, cache management, etc.)
 - Command-line argument examples

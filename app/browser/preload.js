@@ -1,118 +1,7 @@
 const { ipcRenderer } = require("electron");
 
-// #2677: Electron removed the non-standard `File.path` from dropped files, so
-// Teams (which uploads by native path) rejects them as "File is missing data".
-// Restore it via webUtils.getPathForFile before Teams's drop handler reads it,
-// scoped to Teams hosts so the SSO/auth pages this window also loads can't read
-// local paths off dropped files.
-//
-// The same stripping hits pasted files: when a user copies an image file
-// in their file manager and pastes into the compose box, Chromium surfaces it
-// as a File on the paste event's clipboardData, and Teams uploads by path — so
-// the paste fails the same way drag-drop used to. Restore the path on a
-// capture-phase paste listener too. Raw image-bit paste (screenshots) arrives
-// as a Blob with no path and is unaffected.
-try {
-  const { webUtils } = require("electron");
-  const TEAMS_HOSTS = ["teams.cloud.microsoft", "teams.microsoft.com", "teams.live.com"];
-  const isTeamsHost = (hostname) => {
-    if (hostname.endsWith(".mcas.ms")) {
-      hostname = hostname.slice(0, -".mcas.ms".length);
-    }
-    return TEAMS_HOSTS.some(
-      (domain) =>
-        hostname === domain ||
-        (hostname.endsWith("." + domain) &&
-          !hostname.slice(0, -(domain.length + 1)).includes(".")),
-    );
-  };
-  // Restore the non-standard `File.path` on every File in a FileList, in place.
-  // No-op for blob-backed files (screenshots) since webUtils only resolves a
-  // path for files that originated from the OS file list; those are left as-is.
-  const restoreFilePaths = (files) => {
-    if (!files?.length) {
-      return;
-    }
-    for (const file of files) {
-      if (file.path) {
-        continue;
-      }
-      try {
-        const path = webUtils.getPathForFile(file);
-        if (path) {
-          Object.defineProperty(file, "path", {
-            value: path,
-            writable: true,
-            enumerable: true,
-            configurable: true,
-          });
-        }
-      } catch {
-        // leave the file untouched if the path can't be resolved
-      }
-    }
-  };
-  globalThis.addEventListener(
-    "drop",
-    (event) => {
-      if (!isTeamsHost(globalThis.location.hostname)) {
-        return;
-      }
-      restoreFilePaths(event.dataTransfer?.files);
-    },
-    true,
-  );
-  globalThis.addEventListener(
-    "paste",
-    (event) => {
-      if (!isTeamsHost(globalThis.location.hostname)) {
-        return;
-      }
-      restoreFilePaths(event.clipboardData?.files);
-    },
-    true,
-  );
-} catch {
-  // webUtils unavailable
-}
-
-// #2534: forward the MessagePort that main posts on 'screen-share-port' into
-// the main world. Using window.postMessage with transfer is the supported way
-// to hand a MessagePort across to the renderer; the port cannot be returned
-// through a contextBridge-exposed function call. Posting to
-// `window.location.origin` (rather than `"*"`) restricts the destination to
-// this document and satisfies SonarCloud's S2819 cross-origin check.
-ipcRenderer.on("screen-share-port", (event) => {
-  if (event.ports?.length) {
-    globalThis.postMessage("screen-share-port", globalThis.location.origin, event.ports);
-  }
-});
-
 // Note: IPC validation handled by main process, no need for duplicate validation here
 globalThis.electronAPI = {
-  desktopCapture: {
-    chooseDesktopMedia: (sources, cb) => {
-      ipcRenderer
-        .invoke("choose-desktop-media", sources)
-        .then((streamId) => cb(streamId))
-        .catch(err => {
-          console.error('Desktop media choice failed:', err);
-          cb(null);
-        });
-      return Date.now();
-    },
-    cancelChooseDesktopMedia: () => ipcRenderer.send("cancel-desktop-media"),
-  },
-  sendScreenSharingStarted: (sourceId) => {
-    if (sourceId === null || (typeof sourceId === 'string' && sourceId.length < 100)) {
-      return ipcRenderer.send("screen-sharing-started", sourceId);
-    }
-    console.error('Invalid sourceId for screen sharing');
-  },
-  sendScreenSharingStopped: () => ipcRenderer.send("screen-sharing-stopped"),
-  stopSharing: () => ipcRenderer.send("stop-screen-sharing-from-thumbnail"),
-  sendSelectSource: () => ipcRenderer.send("select-source"),
-  onSelectSource: (callback) => ipcRenderer.once("select-source", callback),
   send: (channel, ...args) => {
     return ipcRenderer.send(channel, ...args);
   },
@@ -150,21 +39,6 @@ globalThis.electronAPI = {
     return ipcRenderer.send("tray-update", { icon, flash });
   },
 
-  onSystemThemeChanged: (callback) => {
-    if (typeof callback !== 'function') {
-      console.error('Invalid callback for theme changed');
-      return;
-    }
-    return ipcRenderer.on("system-theme-changed", callback);
-  },
-
-  setUserStatus: (data) => {
-    if (!data || typeof data !== 'object') {
-      return Promise.reject(new Error('Invalid user status data'));
-    }
-    return ipcRenderer.invoke("user-status-changed", data);
-  },
-
   getZoomLevel: (partition) => {
     if (typeof partition !== 'string' || partition.length > 100) {
       return Promise.reject(new Error('Invalid partition'));
@@ -176,39 +50,6 @@ globalThis.electronAPI = {
       return Promise.reject(new Error('Invalid zoom data'));
     }
     return ipcRenderer.invoke("save-zoom-level", data);
-  },
-
-  navigateBack: () => ipcRenderer.send("navigate-back"),
-  navigateForward: () => ipcRenderer.send("navigate-forward"),
-  getNavigationState: () => ipcRenderer.invoke("get-navigation-state"),
-  onNavigationStateChanged: (callback) => {
-    if (typeof callback !== 'function') {
-      console.error('Invalid callback for navigation state changed');
-      return;
-    }
-    return ipcRenderer.on("navigation-state-changed", callback);
-  },
-
-  graphApi: {
-    getUserProfile: () => ipcRenderer.invoke("graph-api-get-user-profile"),
-    getCalendarEvents: (options) => ipcRenderer.invoke("graph-api-get-calendar-events", options),
-    getCalendarView: (start, end, options) => ipcRenderer.invoke("graph-api-get-calendar-view", start, end, options),
-    createCalendarEvent: (event) => ipcRenderer.invoke("graph-api-create-calendar-event", event),
-    getMailMessages: (options) => ipcRenderer.invoke("graph-api-get-mail-messages", options),
-  },
-
-  openChatWithUser: (email) => {
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      console.error('Invalid email for chat deep link');
-      return false;
-    }
-    // Use the current Teams base URL (could be teams.cloud.microsoft or teams.microsoft.com)
-    const currentOrigin = globalThis.location.origin;
-    const chatPath = `/l/chat/0/0?users=${encodeURIComponent(email)}`;
-    const chatUrl = `${currentOrigin}${chatPath}`;
-    console.debug('[CHAT_LINK] Navigating to chat via deep link');
-    globalThis.location.href = chatUrl;
-    return true;
   },
 
   sessionType: process.env.XDG_SESSION_TYPE || "x11",
@@ -354,7 +195,7 @@ function createCustomNotification(title, options) {
 // Using factory function pattern instead of class to avoid "return in constructor" anti-pattern
 (function() {
   const ICON_BASE64 =
-    "data:image/png;base64,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";
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFMUlEQVR4nO2bXWwUVRTHixp9IuATH4vt7qwGkeKD+JkYIYoYY8SPCBgNGF6UByNv8qBht22qxI+Hrh/dgdqGD5VWWwolSFOCKIQQWmhSqlSbtpbdLh+ttHTpzNyZxeO5Lbs7M7vduVtmu7PdOcnJTndnmvv/3XPPPffOTEGBbbbZZts0GsfDHKdfeIbjpQ9cvFTt4sVzLr9I8O8+7ltSnO32mWocLxQ6eWkNituGQutRcA8ew+Qufp/tNk/JVnjgLvcOstTFk7Uo1Mv5xSYUeyW12KTenG0thra4Cma7d8rL3ZXCRhRbgUJPYs8JUxBrfQD3VY0tRJGrsGFbOL+0G4//QLE3TRJrMQAAs9y89CqG7+cotgV7djCDQq0HAHu2PAuCrQOATkd5DQAjoMMGYAOwAWQVgPOr8HWHJ9CWYW+cV3bJZU0AvjA4vMHMO0LIawALPcEOiwIYlbFx10xxb1DMOQCcSUnQURJ4EQH8m38APHAHjm+vwxu4qRvz/6m/m5EAuO09c1Dk/sQeD4RR8Dr0UEYAPLBDgtV1BDYdJvDOIQKragm4pwqgUjg2FfELPAOPYC/3JhF/YX5paAk9x3QAy6ol8LXJMHBdgUgkovGeawpsPy3Dg1XpAcAkSFDIxnTEo8gN6GNJxB+gURE9z1QAbzQS6B9JFK73rqHIeHSwAwhHG3h4flmoKJXw+yv+vgcTXUWSOT6C4rfi+n6W+nzTAKw/QGBUTC1c7VfCCrxQlx6A6NhF31JQB3fq24ohX4giziQRfxl9ZTJgpgB4cg+BoRvanidyBH7pUeCTU/J42P/ar4CsaCH0DSvjQyY9ADFR5xaUhpbHQh4FjgvVT23eYGuqqDEFQHOvVjwdBi//nHje202JoHadlw0BuL4Z60JxN5LM2zIKLMfPjydCPOF330OezrsnE28KgJd+kjSCRoQIPLdv8vH9egMBSY6fL+LxU3sN80HzPM8lJzbwCFNJi9Ue+qZUwk0DsO9PWQOg5KRxj/rbtddUtBpeE6sDHCXBtdjbV1OI715UenEZi3hTAAyMxkN6GHt/6XfGY5r2OFFFQfvlCDMAaoWf9t+LQvmJSk4zxTUVefrmsoq/bQDPYqire/JQt8KU1am3heLgCCZHg2SYtBLErL8aG92JMIbx+EP9FJdxAG8d1AL47LRx+Ee9pkM7DJ6vTZkHMrYjdFsA3m/RAth6nB3Al2e0ANY15iCA945oAXz0OzsAmvjU177WkIMAaK+pRfiMs3nMa3Wzx4ofcxDA47sJKCoRJy6yJ8G/huJJMCxFYPHO9JNg1gFQpwsbdfnLUNQkFE+0TDa4xroAfLqxvIehtG3pU9LNHdYF8AQuhAQSF0MXPJubJ4+CbSe0wAZxbcBQPFkXAPWvz2pF0fq+/JR246O4euI8/YqQAmHIGdYGQIWev5q45qe9e+wfBX7DMU7LZP3vx/F7xm0yawOg/hjOCBcG2TdEWrEUfriGbcbICQDUH91F4GB36i0x5VaiLGbYCMk5AFF/E9cI9V0yhG6tFOm4D4wosLdThjX16f2vnASg9iWYHwyKHEM39daYznPixoh9c3S6bo97A/utCWA6HpBA8XTf0ZIAuHx/RMYGYD8omV0AZXkNIPawNC9+4eKlo+hD+QUgieXX4/KMRl+Y4HjhabdffHfGvzDBann1ykw65qwSityV0is4fDwuv9iAn72pACC8H7Ld5oxbUQ3MdVeKK2lecfmlGoyWdhQuc/S1OZ4w3+2dWQbp3+y0zTbbTLH/AaEkPGNeagP/AAAAAElFTkSuQmCC";
 
   const classicNotification = globalThis.Notification;
 
@@ -428,29 +269,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modules = [
       { name: "zoom", path: "./tools/zoom" },
       { name: "shortcuts", path: "./tools/shortcuts" },
-      { name: "settings", path: "./tools/settings" },
-      { name: "theme", path: "./tools/theme" },
       { name: "emulatePlatform", path: "./tools/emulatePlatform" },
       { name: "webauthnOverride", path: "./tools/webauthnOverride" },
-      { name: "timestampCopyOverride", path: "./tools/timestampCopyOverride" },
       { name: "trayIconRenderer", path: "./tools/trayIconRenderer" },
-      { name: "mqttStatusMonitor", path: "./tools/mqttStatusMonitor" },
-      { name: "meetingStartDetector", path: "./tools/meetingStartDetector" },
-      { name: "overrideMicConstraints", path: "./tools/overrideMicConstraints" },
-      { name: "disableAutogain", path: "./tools/disableAutogain" },
-      { name: "ignoreSystemMute", path: "./tools/ignoreSystemMute" },
-      { name: "speakingIndicator", path: "./tools/speakingIndicator" },
-      { name: "cameraResolution", path: "./tools/cameraResolution" },
-      { name: "cameraAspectRatio", path: "./tools/cameraAspectRatio" },
-      { name: "navigationButtons", path: "./tools/navigationButtons" },
-      { name: "framelessTweaks", path: "./tools/frameless" },
-      { name: "customStickers", path: "./tools/customStickers" },
-      { name: "dockIconRenderer", path: "./tools/dockIconRenderer" },
-      { name: "preventDeviceSwitching", path: "./tools/preventDeviceSwitching" }
     ];
 
     // CRITICAL: These modules need ipcRenderer for IPC communication (see CLAUDE.md)
-    const modulesRequiringIpc = new Set(["settings", "theme", "trayIconRenderer", "mqttStatusMonitor", "meetingStartDetector", "webauthnOverride", "speakingIndicator", "customStickers", "dockIconRenderer"]);
+    const modulesRequiringIpc = new Set(["trayIconRenderer", "webauthnOverride"]);
 
     let successCount = 0;
     for (const module of modules) {
@@ -468,13 +293,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     console.info(`Preload: ${successCount}/${modules.length} browser modules initialized successfully`);
-
-    try {
-      const ActivityManager = require("./notifications/activityManager");
-      new ActivityManager(ipcRenderer, config).start();
-    } catch (err) {
-      console.error("Preload: ActivityManager failed to initialize:", err.message);
-    }
 
     // Listen for config changes from the main process (e.g., when menu toggles are clicked)
     ipcRenderer.on("config-changed", (_event, configChanges) => {

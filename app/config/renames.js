@@ -40,32 +40,10 @@ const RENAMES = [
   // defaults of its siblings. That is gate A in issue #2842 and must land
   // first.
   //
-  // customBackground
-  { flat: "isCustomBackgroundEnabled", nested: "customBackground.enabled" },
-  { flat: "customBGServiceBaseUrl", nested: "customBackground.serviceBaseUrl" },
-  {
-    flat: "customBGServiceConfigFetchInterval",
-    nested: "customBackground.configFetchInterval",
-  },
   // urlHandling
   { flat: "defaultURLHandler", nested: "urlHandling.defaultHandler" },
-  { flat: "meetupJoinRegEx", nested: "urlHandling.meetupJoinRegEx" },
-  {
-    flat: "onNewWindowOpenMeetupJoinUrlInApp",
-    nested: "urlHandling.openMeetupJoinInApp",
-  },
-  // incomingCalls
-  { flat: "enableIncomingCallToast", nested: "incomingCalls.toast" },
-  { flat: "incomingCallCommand", nested: "incomingCalls.command" },
-  {
-    flat: "incomingCallCommandArgs",
-    nested: "incomingCalls.commandArgs",
-    type: "array",
-  },
   // appearance
-  { flat: "customCSSName", nested: "appearance.cssName" },
   { flat: "customCSSLocation", nested: "appearance.cssLocation" },
-  { flat: "followSystemTheme", nested: "appearance.followSystemTheme" },
   // platform
   { flat: "chromeUserAgent", nested: "platform.chromeUserAgent" },
   {
@@ -77,7 +55,6 @@ const RENAMES = [
     nested: "platform.spellCheckerLanguages",
     type: "array",
   },
-  { flat: "disableTimestampOnCopy", nested: "platform.disableTimestampOnCopy" },
   // app
   { flat: "appTitle", nested: "app.title" },
   { flat: "url", nested: "app.url" },

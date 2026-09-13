@@ -11,4 +11,5 @@ Manages application and system tray menus.
 
 - **[index.js](index.js)**: Entry point, loads menu definitions
 - **[appMenu.js](appMenu.js)**: Application menu structure (shared with tray)
+- **[profilesMenu.js](profilesMenu.js)**: Profiles submenu (only when `multiAccount.enabled`)
 - **[tray.js](tray.js)**: System tray implementation and menu

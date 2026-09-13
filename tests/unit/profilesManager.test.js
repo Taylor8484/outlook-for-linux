@@ -106,7 +106,7 @@ describe('ProfilesManager getLegacyProfile', () => {
     const bootstrapped = pm.bootstrapLegacyProfile('My account');
     const legacy = pm.getLegacyProfile();
     assert.strictEqual(legacy.id, bootstrapped.id);
-    assert.strictEqual(legacy.partition, 'persist:teams-4-linux');
+    assert.strictEqual(legacy.partition, 'persist:outlook-4-linux');
   });
 
   it('does not confuse regular partitions with the legacy one', () => {

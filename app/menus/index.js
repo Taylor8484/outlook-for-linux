@@ -8,8 +8,7 @@ const {
   ipcMain,
   shell,
 } = require("electron");
-const fs = require("node:fs"),
-  path = require("node:path");
+const path = require("node:path");
 const { fileURLToPath } = require("node:url");
 const appMenu = require("./appMenu");
 const buildProfilesMenu = require("./profilesMenu");
@@ -20,9 +19,7 @@ const {
 const Tray = require("./tray");
 const TrayIconChooser = require("../browser/tools/trayIconChooser");
 const { SpellCheckProvider } = require("../spellCheckProvider");
-const DocumentationWindow = require("../documentationWindow");
 const GpuInfoWindow = require("../gpuInfoWindow");
-const JoinMeetingDialog = require("../joinMeetingDialog");
 const AddProfileDialog = require("../profileDialogs/addProfile");
 const ManageProfileDialog = require("../profileDialogs/manageProfile");
 const autoUpdaterModule = require("../autoUpdater");
@@ -33,7 +30,6 @@ const {
 
 let _Menus_onSpellCheckerLanguageChanged = new WeakMap();
 class Menus {
-  #preJoinUrl = null;
   #profileChangeHandler = null;
   #switcherOpenAddHandler = null;
   #switcherOpenManageHandler = null;
@@ -52,12 +48,7 @@ class Menus {
     this.connectionManager = connectionManager;
     this.profilesManager = profilesManager;
     this.allowQuit = false;
-    this.documentationWindow = new DocumentationWindow();
     this.gpuInfoWindow = new GpuInfoWindow();
-    this.joinMeetingDialog = new JoinMeetingDialog(
-      this.window,
-      this.configGroup.startupConfig.meetupJoinRegEx
-    );
     // Only allocate the Add-profile / Manage-profiles dialogs when multi-
     // account is enabled. The Profiles menu entries that trigger them are
     // themselves gated on the same flag, so with the flag off these objects
@@ -130,7 +121,7 @@ class Menus {
 
   about() {
     const appInfo = [];
-    appInfo.push(`teams-for-linux@${app.getVersion()}\n`);
+    appInfo.push(`outlook-for-linux@${app.getVersion()}\n`);
     for (const prop in process.versions) {
       if (
         prop === "node" ||
@@ -362,12 +353,6 @@ class Menus {
     );
   }
 
-  saveSettings() {
-    // Receive Teams settings from renderer to save to file
-    ipcMain.once("get-teams-settings", saveSettingsInternal);
-    this.window.webContents.send("get-teams-settings");
-  }
-
   async showMigratedConfig() {
     const result = writeMigratedConfig(this.configGroup.configPath);
     const TITLE = "Updated Config";
@@ -452,27 +437,6 @@ class Menus {
     }
   }
 
-  restoreSettings() {
-    // Acknowledge settings restoration completion from renderer
-    ipcMain.once("set-teams-settings", restoreSettingsInternal);
-    const settingsPath = path.join(
-      app.getPath("userData"),
-      "teams_settings.json"
-    );
-    if (fs.existsSync(settingsPath)) {
-      this.window.webContents.send(
-        "set-teams-settings",
-        JSON.parse(fs.readFileSync(settingsPath))
-      );
-    } else {
-      dialog.showMessageBoxSync(this.window, {
-        message: "Settings file not found. Using default settings.",
-        title: "Restore settings",
-        type: "warning",
-      });
-    }
-  }
-
   addProfile() {
     this.addProfileDialog?.show();
   }
@@ -517,7 +481,6 @@ class Menus {
     this.window.webContents.send("config-changed", {
       disableNotifications: this.configGroup.startupConfig.disableNotifications,
       disableNotificationSound: this.configGroup.startupConfig.disableNotificationSound,
-      disableNotificationSoundIfNotAvailable: this.configGroup.startupConfig.disableNotificationSoundIfNotAvailable,
       disableNotificationWindowFlash: this.configGroup.startupConfig.disableNotificationWindowFlash,
       disableBadgeCount: this.configGroup.startupConfig.disableBadgeCount,
       defaultNotificationUrgency: this.configGroup.startupConfig.defaultNotificationUrgency,
@@ -541,16 +504,6 @@ class Menus {
     this.configGroup.legacyConfigStore.set(
       "disableNotificationSound",
       this.configGroup.startupConfig.disableNotificationSound
-    );
-    this.updateMenu();
-  }
-
-  toggleDisableNotificationSoundIfNotAvailable() {
-    this.configGroup.startupConfig.disableNotificationSoundIfNotAvailable =
-      !this.configGroup.startupConfig.disableNotificationSoundIfNotAvailable;
-    this.configGroup.legacyConfigStore.set(
-      "disableNotificationSoundIfNotAvailable",
-      this.configGroup.startupConfig.disableNotificationSoundIfNotAvailable
     );
     this.updateMenu();
   }
@@ -581,123 +534,8 @@ class Menus {
     this.updateMenu();
   }
 
-  forcePip() {
-    const script = `document.querySelectorAll('div[data-type="screen-sharing"] video').forEach(v => {v.removeAttribute("disablepictureinpicture"); v.requestPictureInPicture();})`;
-    this.window.webContents.executeJavaScript(script, true);
-  }
-
-  forceVideoControls() {
-    const script = `document.querySelectorAll('video').forEach(v => {v.removeAttribute("disablepictureinpicture"); v.toggleAttribute("controls");})`;
-    this.window.webContents.executeJavaScript(script, true);
-  }
-
-  joinMeeting() {
-    let clipboardText = '';
-    try {
-      clipboardText = clipboard.readText();
-    } catch (error) {
-      console.error('Error reading clipboard:', error);
-    }
-
-    this.joinMeetingDialog.show(clipboardText, (meetingUrl) => {
-      this.joinMeetingWithUrl(meetingUrl);
-    });
-  }
-
-  async joinMeetingWithUrl(meetingUrl) {
-    try {
-      // Validate the incoming URL up front so a parse failure or a
-      // non-matching URL falls through to the outer catch rather than
-      // ending up assigned raw inside the Teams window.
-      const parsed = new URL(meetingUrl);
-      if (!this.#isMeetingUrl(meetingUrl)) {
-        throw new Error('Not a recognised meeting URL');
-      }
-
-      // Snapshot the current Teams URL so the user can jump back after the
-      // meeting ends (see #2322). Skip the snapshot if we're already on a
-      // meeting URL (e.g. a prior takeover page) so repeat joins don't
-      // overwrite the last known good Teams location.
-      const currentUrl = this.window.webContents.getURL();
-      if (!this.#isMeetingUrl(currentUrl)) {
-        this.#preJoinUrl = currentUrl;
-      }
-
-      // Navigate inside the loaded Teams SPA (same-origin) so the app shell
-      // is preserved when the org allows authenticated join. Only rewrite
-      // to the current origin when the current page is actually on a Teams
-      // host; otherwise (login page, error page) navigate to the URL as-is.
-      const target = this.#isValidTeamsUrl(currentUrl)
-        ? new URL(currentUrl).origin + parsed.pathname + parsed.search + parsed.hash
-        : parsed.href;
-      const script = `window.location.assign(${JSON.stringify(target)});`;
-      this.window.show();
-      this.window.focus();
-      await this.window.webContents.executeJavaScript(script, true);
-    } catch {
-      // Avoid logging the error object: URL query parameters may contain tokens.
-      console.error('[JOIN_MEETING] Failed to navigate to meeting URL');
-      dialog.showErrorBox('Error', 'Failed to join meeting. Please check the URL.');
-    }
-  }
-
-  async returnToTeams() {
-    const fallbackUrl = this.configGroup.startupConfig.url;
-    const target = this.#isValidTeamsUrl(this.#preJoinUrl)
-      ? this.#preJoinUrl
-      : fallbackUrl;
-    try {
-      this.window.show();
-      this.window.focus();
-      await this.window.webContents.loadURL(target, {
-        userAgent: this.configGroup.startupConfig.chromeUserAgent,
-      });
-    } catch {
-      console.error('[RETURN_TO_TEAMS] Navigation failed');
-      dialog.showErrorBox('Error', 'Failed to return to Teams.');
-    }
-  }
-
-  #isMeetingUrl(url) {
-    if (!url || typeof url !== 'string') return false;
-    const pattern = this.configGroup.startupConfig.meetupJoinRegEx;
-    if (!pattern) return false;
-    try {
-      return new RegExp(pattern).test(url);
-    } catch {
-      return false;
-    }
-  }
-
-  #isValidTeamsUrl(url) {
-    if (!url || typeof url !== 'string') return false;
-    try {
-      const { protocol, hostname } = new URL(url);
-      return (
-        protocol === 'https:' &&
-        /(^|\.)teams\.(microsoft\.com|live\.com|cloud\.microsoft)$/.test(hostname)
-      );
-    } catch {
-      return false;
-    }
-  }
-
-  showDocumentation() {
-    this.documentationWindow.show();
-  }
-
   showGpuInfo() {
     this.gpuInfoWindow.show();
-  }
-
-  setQuickChatManager(quickChatManager) {
-    this.quickChatManager = quickChatManager;
-  }
-
-  showQuickChat() {
-    if (this.quickChatManager?.isEnabled()) {
-      this.quickChatManager.toggle();
-    }
   }
 
   checkForUpdates() {
@@ -724,28 +562,6 @@ function isSwitcherPillSender(event) {
     return fileURLToPath(senderUrl) === SWITCHER_HTML_PATH;
   } catch {
     return false;
-  }
-}
-
-function saveSettingsInternal(_event, arg) {
-  fs.writeFileSync(
-    path.join(app.getPath("userData"), "teams_settings.json"),
-    JSON.stringify(arg)
-  );
-  dialog.showMessageBoxSync(this.window, {
-    message: "Settings have been saved successfully!",
-    title: "Save settings",
-    type: "info",
-  });
-}
-
-function restoreSettingsInternal(_event, arg) {
-  if (arg) {
-    dialog.showMessageBoxSync(this.window, {
-      message: "Settings have been restored successfully!",
-      title: "Restore settings",
-      type: "info",
-    });
   }
 }
 

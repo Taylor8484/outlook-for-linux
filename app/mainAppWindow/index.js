@@ -2,14 +2,10 @@ const {
   shell,
   BrowserWindow,
   app,
-  nativeTheme,
   dialog,
   webFrameMain,
   nativeImage,
-  ipcMain,
-  MessageChannelMain,
 } = require("electron");
-const { StreamSelector } = require("../screenSharing");
 const login = require("../login");
 const customCSS = require("../customCSS");
 const Menus = require("../menus");
@@ -20,14 +16,8 @@ require("../appConfiguration");
 const ConnectionManager = require("../connectionManager");
 const ssoPasswordPrefill = require("../ssoPasswordPrefill");
 const BrowserWindowManager = require("../mainAppWindow/browserWindowManager");
-const deepLinkRouter = require("./deepLinkRouter");
 const os = require("node:os");
 const path = require("node:path");
-
-const DEFAULT_SCREEN_SHARING_THUMBNAIL_CONFIG = {
-  enabled: true,
-  alwaysOnTop: true,
-};
 
 let iconChooser;
 let intune;
@@ -42,184 +32,15 @@ let aboutBlankRequestCount = 0;
 let config;
 let window = null;
 let appConfig = null;
-let customBackgroundService = null;
-let streamSelector;
-let screenSharingService = null;
 let connectionManager = null;
 let menus = null;
 
 const isMac = os.platform() === "darwin";
 
-function setupScreenSharing(selectedSource) {
-  screenSharingService.setSelectedSource(selectedSource);
-  createScreenSharePreviewWindow();
-}
-
-// Register the in-app screen-share picker on a given session. `setDisplayMediaRequestHandler`
-// fires only for the session it is bound to, so multi-account profile views (running against
-// their own partition session) need their own binding. See #2529.
-function bindDisplayMediaHandler(targetSession) {
-  targetSession.setDisplayMediaRequestHandler((_request, callback) => {
-    streamSelector.show((source) => {
-      if (source) {
-        handleScreenSourceSelection(source, callback);
-      } else {
-        // User canceled - use setImmediate and try-catch to allow retry
-        setImmediate(() => {
-          try {
-            callback({});
-          } catch {
-            console.debug("[SCREEN_SHARE] User canceled screen selection");
-          }
-        });
-      }
-    });
-  });
-}
-
-function handleScreenSourceSelection(source, callback) {
-  try {
-    // Use the picker's source directly instead of re-querying
-    // desktopCapturer.getSources(). On Wayland/PipeWire every getSources()
-    // call opens a fresh portal session with new source IDs, so an ID from
-    // the picker's enumeration never matched a second enumeration and
-    // sharing always failed. See #2713 (and #2207 for the original attempt).
-    setupScreenSharing(source);
-  } catch (error) {
-    console.error("[SCREEN_SHARE] Failed to setup screen sharing:", {
-      error: error.message,
-      sourceId: source?.id,
-    });
-    setImmediate(() => {
-      try {
-        callback({});
-      } catch {
-        console.debug("[SCREEN_SHARE] Failed to complete screen selection callback");
-      }
-    });
-    return;
-  }
-
-  // Kept out of the try above so a throwing callback is not mistaken for a
-  // setup failure and answered with a second callback.
-  try {
-    callback({ video: { id: source.id, name: source.name || "" } });
-  } catch {
-    console.debug("[SCREEN_SHARE] Failed to complete screen selection callback");
-  }
-}
-
-function createScreenSharePreviewWindow() {
-  const startTime = Date.now();
-
-  let thumbnailConfig =
-    config?.screenSharing?.thumbnail ?? DEFAULT_SCREEN_SHARING_THUMBNAIL_CONFIG;
-
-  const previewWindow = screenSharingService.getPreviewWindow();
-  const activeSource = screenSharingService.getSelectedSource();
-
-  console.debug("[SCREEN_SHARE_DIAG] Preview window creation requested", {
-    enabled: thumbnailConfig.enabled,
-    alwaysOnTop: thumbnailConfig.alwaysOnTop || false,
-    existingWindow: previewWindow && !previewWindow.isDestroyed(),
-    activeSource: activeSource,
-    timestamp: new Date().toISOString()
-  });
-
-  if (!thumbnailConfig.enabled) {
-    console.debug("[SCREEN_SHARE_DIAG] Preview window disabled in configuration");
-    return;
-  }
-
-  // Don't create duplicate windows - this is critical for preventing echo
-  if (previewWindow && !previewWindow.isDestroyed()) {
-    console.warn("[SCREEN_SHARE_DIAG] Preview window already exists, focusing existing", {
-      riskLevel: "MEDIUM - multiple preview windows could cause audio issues",
-      action: "focusing existing window instead of creating new",
-      windowId: previewWindow.id
-    });
-    previewWindow.focus();
-    return;
-  }
-
-  console.debug("[SCREEN_SHARE_DIAG] Creating new preview window", {
-    dimensions: "320x180",
-    alwaysOnTop: thumbnailConfig.alwaysOnTop || false,
-    partition: "persist:teams-for-linux-session"
-  });
-
-  const newPreviewWindow = new BrowserWindow({
-    width: 320,
-    height: 180,
-    minWidth: 200,
-    minHeight: 120,
-    show: false,
-    resizable: true,
-    alwaysOnTop: thumbnailConfig.alwaysOnTop || false,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(
-        __dirname,
-        "..",
-        "screenSharing",
-        "previewWindowPreload.js"
-      ),
-      partition: "persist:teams-for-linux-session",
-    },
-  });
-
-  screenSharingService.setPreviewWindow(newPreviewWindow);
-
-  const windowId = newPreviewWindow.id;
-  console.debug("[SCREEN_SHARE_DIAG] Preview BrowserWindow created", {
-    windowId: windowId,
-    creationTimeMs: Date.now() - startTime,
-    alwaysOnTop: thumbnailConfig.alwaysOnTop || false
-  });
-
-  newPreviewWindow.loadFile(
-    path.join(__dirname, "..", "screenSharing", "previewWindow.html")
-  );
-
-  newPreviewWindow.once("ready-to-show", () => {
-    console.debug("[SCREEN_SHARE_DIAG] Preview window ready, showing now", {
-      windowId: windowId,
-      totalCreationTimeMs: Date.now() - startTime,
-      focused: newPreviewWindow.isFocused(),
-      visible: newPreviewWindow.isVisible()
-    });
-    newPreviewWindow.show();
-  });
-
-  newPreviewWindow.on("focus", () => {
-    console.debug("[SCREEN_SHARE_DIAG] Preview window gained focus", {
-      windowId: windowId,
-      potentialIssue: "Focus on preview might interfere with main Teams window"
-    });
-  });
-
-  newPreviewWindow.on("blur", () => {
-    console.debug("[SCREEN_SHARE_DIAG] Preview window lost focus", {
-      windowId: windowId
-    });
-  });
-
-  newPreviewWindow.on("closed", () => {
-    const closedSource = screenSharingService.getSelectedSource();
-    console.debug("[SCREEN_SHARE_DIAG] Preview window closed", {
-      windowId: windowId,
-      hadActiveSource: !!closedSource,
-      closedSource: closedSource
-    });
-    screenSharingService.setPreviewWindow(null);
-    screenSharingService.setSelectedSource(null);
-  });
-}
-
 // Microsoft Cloud App Security proxy suffix. Tenants that route Teams
 // through Defender for Cloud Apps (MCAS) load and store cookies at
 // `*.mcas.ms` rather than the underlying Microsoft domain. Strip the
-// suffix before matching against AUTH_DOMAINS / TEAMS_DOMAINS so the
+// suffix before matching against AUTH_DOMAINS / OUTLOOK_DOMAINS so the
 // proxied flavour is treated the same as the canonical hostname.
 const MCAS_SUFFIX = '.mcas.ms';
 function stripMcasSuffix(hostname) {
@@ -232,8 +53,7 @@ function stripMcasSuffix(hostname) {
 const AUTH_DOMAINS = [
   'login.microsoftonline.com',
   'login.microsoft.com',
-  'teams.microsoft.com',
-  'teams.cloud.microsoft',
+  'cloud.microsoft',
   'microsoft.com',
   'office.com',
   'office365.com',
@@ -262,12 +82,11 @@ const AUTH_COOKIE_NAMES = new Set([
 // account chooser stays prefilled after session expiry (issue #2364).
 const PRESERVE_ON_RECOVERY = new Set(['ESTSAUTHPERSISTENT']);
 
-// localStorage key patterns for MSAL/Teams auth tokens
+// localStorage key patterns for MSAL auth tokens
 const AUTH_LOCAL_STORAGE_PATTERNS = [
-  'tmp.auth.v1.', 'refresh_token', 'msal.token', 'msal.',
+  'refresh_token', 'msal.token', 'msal.',
   'EncryptionKey', 'authSessionId', 'LogoutState',
   'accessToken', 'idtoken', 'Account', 'Authority', 'ClientInfo',
-  'secure_teams_'
 ];
 
 /**
@@ -371,27 +190,23 @@ function keepMsalEncryptionCookiePersistent(windowSession) {
   });
 }
 
-// Always-on auth-failure signatures. MSAL reports an interaction-required error
-// only when a silent token refresh genuinely fails, so it is a reliable signal to
-// recover on. It surfaces in two spellings: the MSAL class name
-// `InteractionRequired` (console) and the OAuth error code `interaction_required`
-// (the lowercase form thrown by token warming as an unhandled rejection — wired
-// into detection by the unhandled-rejection handler in app/index.js).
+// Auth-failure signatures. MSAL reports an interaction-required error only when
+// a silent token refresh genuinely fails, so it is a reliable signal to recover
+// on. It surfaces in two spellings: the MSAL class name `InteractionRequired`
+// (console) and the OAuth error code `interaction_required` (the lowercase form
+// thrown by token warming as an unhandled rejection — wired into detection by
+// the unhandled-rejection handler in app/index.js).
 const AUTH_FAILURE_PATTERNS = ['InteractionRequired', 'interaction_required'];
-// Opt-in, correlation-only auth-failure signature. The Teams worker can die with
-// an uncaught "UPR: <reason>" error, and a genuinely stale session emits these
-// (sometimes without ever logging InteractionRequired, #2480). But the worker
-// emits the same "UPR:" shape for routine transient failures (pinned channels,
-// presence, "Invalid id undefined", and an empty reason) on perfectly healthy
-// sessions, and UPR-heavy tenants fire them constantly (#2629) — far too noisy to
-// drive an automatic reload. So when auth.reauthRecovery.enabled is set, a UPR
-// only records a failure signal for login-popup correlation (so the banner-click
-// in-app recovery can recognise a broken session); it never schedules the silent
-// clear-and-reload on its own. Recovery from a UPR happens only through an
-// explicit user action (the banner click, or the mid-call prompt).
-const OPT_IN_AUTH_FAILURE_PATTERNS = ['Uncaught Error: UPR:'];
-// Only trust auth failure signals from Teams/Microsoft origins
-const TRUSTED_AUTH_SOURCES = ['teams.cloud.microsoft', 'teams.microsoft.com', 'login.microsoftonline.com'];
+// Only trust auth failure signals from Outlook/Microsoft origins
+const TRUSTED_AUTH_SOURCES = [
+  'outlook.office.com',
+  'outlook.office365.com',
+  'outlook.cloud.microsoft',
+  'outlook.live.com',
+  'res.cdn.office.net',
+  'login.microsoftonline.com',
+  'login.live.com',
+];
 // Loop guard for the automatic clear-and-reload. A cooldown rather than a
 // single-shot flag: a long-running app can hit a second stale session hours
 // after the first recovery (observed in the field: recovery at 10:55, the
@@ -400,9 +215,6 @@ const TRUSTED_AUTH_SOURCES = ['teams.cloud.microsoft', 'teams.microsoft.com', 'l
 // reload loops if a recovery fails to fix the session.
 let lastAuthRecoveryAt = 0;
 const AUTH_RECOVERY_COOLDOWN_MS = 30 * 60 * 1000;
-// Worker UPRs are transient during active calls (#2428); suppress them only while
-// a call is in progress so startup recovery still works for stale-token loops (#2480).
-let callActive = false;
 // Timestamp of the last trusted auth-failure signal. Used to correlate login
 // popups with an actually-broken session: while the stale "sign in again"
 // banner is up the renderer keeps emitting failure signatures every few
@@ -450,40 +262,17 @@ function maybeScheduleAuthRecovery(message, sourceId) {
   if (!config?.auth?.reauthRecovery?.enabled) return;
 
   const text = message || '';
-  // Classify a worker UPR by its shape first, independent of payload contents: a
-  // UPR can embed "...code:InteractionRequired..." (StartUpJob/CalendarSyncJob),
-  // and matching that as the reliable signal would auto-reload on a UPR despite
-  // the correlation-only intent (#2629). So a UPR is never treated as reliable;
-  // it only records a correlation signal for the banner interception (the flag is
-  // already gated above, so the opt-in worker signal needs no extra flag check).
-  const isWorkerUpr = OPT_IN_AUTH_FAILURE_PATTERNS.some(p => text.includes(p));
-  const isReliableSignal = !isWorkerUpr && AUTH_FAILURE_PATTERNS.some(p => text.includes(p));
-  const isOptInWorkerSignal = isWorkerUpr;
-  if (!isReliableSignal && !isOptInWorkerSignal) return;
+  if (!AUTH_FAILURE_PATTERNS.some(p => text.includes(p))) return;
 
   // Verify the message originates from a trusted Microsoft source
   const source = sourceId || '';
   if (source && !TRUSTED_AUTH_SOURCES.some(s => source.includes(s))) return;
 
-  // Record the signal even while recovery is cooling down or a call is
-  // active, so the login-popup interception can still correlate against a
-  // session that stays broken. For a worker UPR this is the only thing it
-  // drives automatically — see the silent-reload guard below.
+  // Record the signal even while recovery is cooling down, so the login-popup
+  // interception can still correlate against a session that stays broken.
   recordAuthFailureSignal();
 
   if (Date.now() - lastAuthRecoveryAt < AUTH_RECOVERY_COOLDOWN_MS) return;
-
-  if (callActive) {
-    handleMidCallAuthSignal(source);
-    return;
-  }
-
-  // Outside a call, only the reliable interaction-required signal triggers the
-  // silent clear-and-reload. A worker UPR is too noisy to auto-recover on
-  // (healthy sessions emit them ~hourly, UPR-heavy tenants constantly — #2629);
-  // it has already fed popup correlation above, so it can still drive an in-app
-  // recovery via the banner-click intercept, just never silently on its own.
-  if (!isReliableSignal) return;
 
   scheduleAuthRecovery();
 }
@@ -500,84 +289,6 @@ function scheduleAuthRecovery() {
       }),
     5000
   );
-}
-
-// ── Mid-call handling ──────────────────────────────────────────────────────
-// Recovery reloads the page, which ends an active call. Auth can genuinely
-// fail mid-call (the call media keeps flowing but chat stops updating), yet
-// worker UPRs during calls are often transient noise (#2428) — reloading on
-// them mid-presentation was the original bug. So mid-call the user gets a
-// choice (sign in now / after the call / not now) instead of a silent reload.
-let firstMidCallWorkerSignalAt = 0;
-let reauthPromptShownForCall = false;
-let reauthPromptOpen = false;
-let recoveryQueuedForCallEnd = false;
-// A single transient worker UPR must not prompt (#2428); require the worker
-// signals to persist this long into the same call before treating them as a
-// genuine mid-call auth failure.
-const MIDCALL_WORKER_SIGNAL_CONFIRM_MS = 3 * 60 * 1000;
-
-function resetMidCallAuthState() {
-  firstMidCallWorkerSignalAt = 0;
-  reauthPromptShownForCall = false;
-}
-
-function handleMidCallAuthSignal(source) {
-  // Only reached with auth.reauthRecovery.enabled on (maybeScheduleAuthRecovery
-  // gates the whole feature), so the user always gets the mid-call prompt rather
-  // than a silent reload that would end the call.
-  const isWorker = source.includes('/worker/');
-
-  if (recoveryQueuedForCallEnd) return;
-
-  if (isWorker) {
-    const now = Date.now();
-    if (!firstMidCallWorkerSignalAt) {
-      firstMidCallWorkerSignalAt = now;
-      return;
-    }
-    if (now - firstMidCallWorkerSignalAt < MIDCALL_WORKER_SIGNAL_CONFIRM_MS) return;
-  }
-
-  promptMidCallReauth(false);
-}
-
-/**
- * Asks the user whether to reauthenticate during an active call. Shown at
- * most once per call for automatic signals; an explicit banner click
- * (force=true) re-prompts even after a "Not now".
- */
-async function promptMidCallReauth(force) {
-  if (reauthPromptOpen) return;
-  if (!force && reauthPromptShownForCall) return;
-  reauthPromptOpen = true;
-  reauthPromptShownForCall = true;
-  try {
-    const { response } = await dialog.showMessageBox(window, {
-      type: 'warning',
-      title: 'Sign-in required',
-      message: 'Teams needs you to sign in again.',
-      detail:
-        'Chat and other features may stop updating until you sign in again. ' +
-        'Signing in now reloads the app and ends your current call.',
-      buttons: ['Sign in now', 'After the call', 'Not now'],
-      defaultId: 1,
-      cancelId: 2,
-    });
-    if (response === 0) {
-      console.info('[AUTH_RECOVERY] User chose to reauthenticate during call');
-      await triggerAuthRecovery();
-    } else if (response === 1) {
-      console.info('[AUTH_RECOVERY] Recovery queued until the call ends');
-      recoveryQueuedForCallEnd = true;
-    } else {
-      console.info('[AUTH_RECOVERY] Mid-call reauth declined');
-    }
-  } catch (err) {
-    console.error('[AUTH_RECOVERY] Mid-call reauth prompt failed:', err);
-  } finally {
-    reauthPromptOpen = false;
-  }
 }
 
 /**
@@ -605,13 +316,6 @@ function triggerPopupRecovery(context) {
   const now = Date.now();
   if (now - lastPopupRecoveryAt < POPUP_RECOVERY_DEDUPE_MS) return;
   lastPopupRecoveryAt = now;
-  if (callActive) {
-    // Recovery would end the active call — let the user decide. force=true:
-    // an explicit click re-prompts even after an earlier "Not now".
-    console.info(`[AUTH_RECOVERY] ${context} during an active call, asking user`);
-    promptMidCallReauth(true);
-    return;
-  }
   console.info(`[AUTH_RECOVERY] ${context}, triggering in-app recovery`);
   setImmediate(() =>
     triggerAuthRecovery().catch((err) => {
@@ -657,11 +361,9 @@ async function triggerAuthRecovery() {
   window.loadURL(config.url, { userAgent: config.chromeUserAgent });
 }
 
-exports.onAppReady = async function onAppReady(configGroup, customBackground, sharingService, profilesManager = null) {
+exports.onAppReady = async function onAppReady(configGroup, profilesManager = null) {
   appConfig = configGroup;
   config = configGroup.startupConfig;
-  customBackgroundService = customBackground;
-  screenSharingService = sharingService;
   profilesManagerRef = profilesManager;
 
   const intuneEnabled = config.auth?.intune?.enabled;
@@ -706,59 +408,6 @@ exports.onAppReady = async function onAppReady(configGroup, customBackground, sh
   });
 
   window = await browserWindowManager.createWindow();
-  streamSelector = new StreamSelector(window);
-
-  // Restrict WebRTC ICE candidate gathering to the interface with the default
-  // route, preventing secondary interfaces (e.g. an ethernet adapter with no
-  // internet gateway) from being advertised, which causes asymmetric STUN
-  // replies and drops calls to OnHold.
-  if (config.network.webRTCIPHandlingPolicy) {
-    console.info(`[WebRTC] IP handling policy applied`);
-    window.webContents.setWebRTCIPHandlingPolicy(config.network.webRTCIPHandlingPolicy);
-  }
-
-  bindDisplayMediaHandler(window.webContents.session);
-
-  // #2534: the Teams-side script pumps VideoFrames from the active
-  // screen-share track through a MessagePort; the preview window reconstructs
-  // the stream on the other end via MediaStreamTrackGenerator. This avoids a
-  // second getUserMedia/portal call (which on Wayland needs a PipeWire token
-  // we cannot reuse) and means one capture feeds both Teams and the preview.
-  // The 'screen-sharing-started' / 'screen-sharing-stopped' channels are a
-  // broadcast: ScreenSharingService updates internal state, MQTTMediaStatusService
-  // publishes to the broker, and this listener wires the MessagePort. Adding
-  // another ipcMain.on here is the established pattern, not a duplication.
-
-  // Opens the screen-share preview window (if enabled) and connects the
-  // Teams renderer to it with a direct MessagePort so a single capture
-  // feeds both windows (#2534). One of several listeners on this broadcast
-  // channel; see the rationale above.
-  ipcMain.on("screen-sharing-started", () => {
-    if (!window || window.isDestroyed()) return;
-    createScreenSharePreviewWindow();
-    const previewWindow = screenSharingService.getPreviewWindow();
-    if (!previewWindow || previewWindow.isDestroyed()) {
-      console.debug("[SCREEN_SHARE_DIAG] No preview window after creation (thumbnail disabled or already destroyed) - skipping port wiring");
-      return;
-    }
-    const postPorts = () => {
-      try {
-        const { port1, port2 } = new MessageChannelMain();
-        window.webContents.postMessage("screen-share-port", null, [port1]);
-        previewWindow.webContents.postMessage("screen-share-port", null, [port2]);
-        console.debug("[SCREEN_SHARE_DIAG] Posted MessagePort to Teams renderer and preview window");
-      } catch (error) {
-        console.error("[SCREEN_SHARE_DIAG] Failed to post MessagePort", {
-          error: error.message,
-        });
-      }
-    };
-    if (previewWindow.webContents.isLoading()) {
-      previewWindow.webContents.once("did-finish-load", postPorts);
-    } else {
-      postPorts();
-    }
-  });
 
   connectionManager = new ConnectionManager();
 
@@ -781,40 +430,10 @@ exports.onAppReady = async function onAppReady(configGroup, customBackground, sh
   // correlation survives app restarts (the broken session does).
   lastAuthFailureSignalAt = Number(appConfig.settingsStore.get(AUTH_SIGNAL_STORE_KEY)) || 0;
 
-  // Monitor renderer auth-failure signals. When Teams can't refresh tokens
-  // silently (e.g., after overnight idle), it logs InteractionRequired. We
-  // detect this, clear stale auth state, and reload to force a clean
-  // interactive login. Detection itself lives in maybeScheduleAuthRecovery
-  // so the forwarded window-error path can reuse it.
-  app.on('teams-call-connected', () => {
-    callActive = true;
-    resetMidCallAuthState();
-  });
-  app.on('teams-call-disconnected', () => {
-    callActive = false;
-    resetMidCallAuthState();
-    if (recoveryQueuedForCallEnd) {
-      recoveryQueuedForCallEnd = false;
-      console.info('[AUTH_RECOVERY] Call ended, running queued recovery');
-      // Short delay so the call teardown finishes before the reload
-      setTimeout(
-        () =>
-          triggerAuthRecovery().catch((err) => {
-            console.error('[AUTH_RECOVERY] Failed to trigger auth recovery:', err);
-          }),
-        5000
-      );
-    }
-  });
-  // Page reload (including renderer crash recovery) resets renderer-side call state,
-  // so clear the flag to avoid getting stuck if 'teams-call-disconnected' was missed.
-  // A reload also moots any queued recovery: if the session is still broken,
-  // fresh signals will re-trigger detection.
-  window.webContents.on('did-navigate', () => {
-    callActive = false;
-    resetMidCallAuthState();
-    recoveryQueuedForCallEnd = false;
-  });
+  // Monitor renderer auth-failure signals. When the web app can't refresh
+  // tokens silently (e.g., after overnight idle), MSAL logs
+  // InteractionRequired. Detection lives in maybeScheduleAuthRecovery so the
+  // forwarded window-error path can reuse it.
   window.webContents.on('console-message', (event) => {
     maybeScheduleAuthRecovery(event.message, event.sourceId);
   });
@@ -857,14 +476,6 @@ exports.getWindow = function () {
   return window;
 };
 
-exports.bindDisplayMediaHandler = bindDisplayMediaHandler;
-
-exports.setQuickChatManager = function (quickChatManager) {
-  if (menus) {
-    menus.setQuickChatManager(quickChatManager);
-  }
-};
-
 exports.onAppSecondInstance = function onAppSecondInstance(event, args) {
   console.debug("second-instance started");
   if (window && !window.isDestroyed()) {
@@ -875,39 +486,18 @@ exports.onAppSecondInstance = function onAppSecondInstance(event, args) {
       setTimeout(() => {
         allowFurtherRequests = true;
       }, 5000);
-      // `loadURL` rejects with ERR_ABORTED whenever Teams redirects the
+      // `loadURL` rejects with ERR_ABORTED whenever the web app redirects the
       // navigation it started, and the main process exits on
-      // unhandledRejection. The error is dropped rather than logged because it
-      // carries the deep link, and with it the recipient or meeting.
-      openDeepLink(url).catch(() => {
-        console.debug("[DEEPLINK] navigation failed");
+      // unhandledRejection. The error is dropped rather than logged because
+      // the URL can identify a message or folder.
+      window.loadURL(url, { userAgent: config.chromeUserAgent }).catch(() => {
+        console.debug("[ARGS] navigation failed");
       });
     }
 
     restoreWindow();
   }
 };
-
-/**
- * Opens a deep link, preferring in-page routing over a full navigation.
- *
- * A full `loadURL` discards the running SPA and cold-boots it, which is the
- * multi-second delay between activating a link and seeing the target. Launcher
- * links route through the loaded SPA instead, and anything it does not consume
- * falls back to the full navigation.
- *
- * @param {string} url - Deep link URL resolved from the launch argument
- */
-async function openDeepLink(url) {
-  const routed = await deepLinkRouter.navigateInPage(window, url, config.url);
-  if (routed) {
-    console.debug("[DEEPLINK] routed in page");
-    return;
-  }
-
-  console.debug("[DEEPLINK] in-page routing unavailable, reloading");
-  await window.loadURL(url, { userAgent: config.chromeUserAgent });
-}
 
 function applyAppConfiguration(config, window) {
   applySpellCheckerConfiguration(config.spellCheckerLanguages, window);
@@ -963,58 +553,11 @@ function onDidFinishLoad() {
   // navigator.mediaDevices are unavailable.
   const currentUrl = window.webContents.getURL();
   if (!currentUrl.startsWith("https://")) {
-    console.debug(`[CONNECTION] Skipping script injection on non-Teams page: ${currentUrl.split("?")[0]}`);
+    console.debug(`[CONNECTION] Skipping script injection on non-app page: ${currentUrl.split("?")[0]}`);
     return;
   }
 
-  window.webContents.executeJavaScript(`
-			openBrowserButton = document.querySelector('[data-tid=joinOnWeb]');
-			openBrowserButton && openBrowserButton.click();
-		`).catch(() => {});
-  window.webContents.executeJavaScript(`
-			tryAgainLink = document.getElementById('try-again-link');
-			tryAgainLink && tryAgainLink.click()
-		`).catch(() => {});
-
-  injectScreenSharingLogic();
-
   customCSS.onDidFinishLoad(window.webContents, config);
-  initSystemThemeFollow(config);
-}
-
-function injectScreenSharingLogic() {
-  const fs = require("node:fs");
-  const scriptPath = path.join(
-    __dirname,
-    "..",
-    "screenSharing",
-    "injectedScreenSharing.js"
-  );
-  try {
-    const script = fs.readFileSync(scriptPath, "utf8");
-    window.webContents.executeJavaScript(script).catch((err) => {
-      console.error("[SCREEN_SHARE] Failed to execute injected script:", err.message);
-    });
-  } catch (err) {
-    console.error("Failed to load injected screen sharing script:", err);
-  }
-}
-
-function initSystemThemeFollow(config) {
-  if (config.followSystemTheme) {
-    nativeTheme.on("updated", () => {
-      window.webContents.send(
-        "system-theme-changed",
-        nativeTheme.shouldUseDarkColors
-      );
-    });
-    setTimeout(() => {
-      window.webContents.send(
-        "system-theme-changed",
-        nativeTheme.shouldUseDarkColors
-      );
-    }, 2500);
-  }
 }
 
 function onDidFrameFinishLoad(
@@ -1026,7 +569,7 @@ function onDidFrameFinishLoad(
   console.debug("did-frame-finish-load", event, isMainFrame);
 
   if (isMainFrame) {
-    return; // We want to insert CSS only into the Teams V2 content iframe
+    return; // The main frame gets its custom CSS in onDidFinishLoad
   }
 
   const wf = webFrameMain.fromId(frameProcessId, frameRoutingId);
@@ -1044,48 +587,28 @@ function restoreWindow() {
 }
 
 /**
- * Processes command line arguments to extract Teams URLs and protocol handlers.
- * Handles both msteams:// protocol links and HTTPS URLs that match the Teams domain pattern.
- * This enables deep linking into Teams conversations, meetings, and channels.
+ * Returns the first command line argument that is an https URL on an Outlook
+ * web app host, so `outlook-for-linux https://outlook.office.com/mail/...`
+ * opens that page in the running window.
  *
  * @param {string[]} args - Command line arguments to process
- * @returns {string|null} Processed URL to navigate to, or null if no valid URL found
+ * @returns {string|null} URL to navigate to, or null if none was found
  */
 function processArgs(args) {
-  // Legacy Teams protocol format: msteams:/l/meetup-join/...
-  const v1msTeams = new RegExp(config.msTeamsProtocols.v1);
-  // Modern Teams protocol format: msteams://teams.microsoft.com/l/...
-  const v2msTeams = new RegExp(config.msTeamsProtocols.v2);
-  console.debug("processArgs:", args);
   for (const arg of args) {
-    console.debug(
-      `testing RegExp processArgs ${new RegExp(config.meetupJoinRegEx).test(
-        arg
-      )}`
-    );
-    if (new RegExp(config.meetupJoinRegEx).test(arg)) {
-      console.debug("A url argument received with https protocol");
-      window.show();
+    if (isOutlookAppUrl(arg)) {
+      console.debug("[ARGS] Outlook URL argument received");
       return arg;
     }
-    if (v1msTeams.test(arg)) {
-      console.debug("A url argument received with msteams v1 protocol");
-      window.show();
-      return config.url + arg.substring(8, arg.length);
-    }
-    if (v2msTeams.test(arg)) {
-      console.debug("A url argument received with msteams v2 protocol");
-      window.show();
-      return arg.replace("msteams", "https");
-    }
   }
+  return null;
 }
 
 // Microsoft telemetry / beacon hosts that are not required for Teams to
 // function. Blocking these at webRequest cancels both the network traffic
 // and the downstream sub-frame failure logs they would otherwise produce
 // in restricted-network environments. Kept deliberately narrow: anything
-// Teams needs to function (teams.cloud.microsoft, *.office.net,
+// Outlook needs to function (outlook.office.com, *.office.net,
 // login.microsoftonline.com, *.trafficmanager.net) is excluded. Start
 // with this initial set and expand as new hosts are confirmed safe to
 // drop; any new entry must also satisfy `MS_TELEMETRY_FAST_PATH` below
@@ -1122,12 +645,7 @@ function onBeforeRequestHandler(details, callback) {
     return;
   }
 
-  const customBackgroundRedirect =
-    customBackgroundService.beforeRequestHandlerRedirectUrl(details);
-
-  if (customBackgroundRedirect) {
-    callback(customBackgroundRedirect);
-  } else if (aboutBlankRequestCount < 1) {
+  if (aboutBlankRequestCount < 1) {
     callback({});
   } else if (details.resourceType === "mainFrame") {
     // A top-level navigation is never the about:blank popup's own request, so
@@ -1167,25 +685,32 @@ function onBeforeRequestHandler(details, callback) {
   }
 }
 
-// Teams domains whose enforcing CSP we never touch
-const TEAMS_DOMAINS = [
-  'teams.cloud.microsoft',
-  'teams.microsoft.com',
-  'teams.live.com',
-  'statics.teams.cdn.office.net',
+// Outlook web app hosts. Their enforcing CSP is never touched, and they are the
+// only hosts accepted as URL arguments. Matched exactly or as a subdomain of an
+// entry; never match the bare outlook.com suffix, which also covers SafeLinks
+// redirectors (*.safelinks.protection.outlook.com).
+const OUTLOOK_DOMAINS = [
+  'outlook.office.com',
+  'outlook.office365.com',
+  'outlook.cloud.microsoft',
+  'outlook.live.com',
 ];
 
 /**
- * Checks whether a URL belongs to a Teams domain.
+ * Checks whether a URL belongs to an Outlook web app host.
  * Also handles Microsoft Cloud App Security (MCAS) proxy suffix.
  */
-function isTeamsDomain(url) {
+function isOutlookDomain(url) {
   try {
     const hostname = stripMcasSuffix(new URL(url).hostname);
-    return TEAMS_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));
+    return OUTLOOK_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));
   } catch {
     return false;
   }
+}
+
+function isOutlookAppUrl(url) {
+  return typeof url === 'string' && url.startsWith('https://') && isOutlookDomain(url);
 }
 
 // Microsoft Identity Platform login hostnames. When Teams opens a popup to
@@ -1215,7 +740,7 @@ function isAuthLoginUrl(url) {
 }
 
 /**
- * Strips report-only CSP headers for non-Teams domains (#2326).
+ * Strips report-only CSP headers for non-Outlook domains (#2326).
  *
  * With contextIsolation disabled the shared V8 context erroneously
  * enforces report-only policies as blocking, breaking SSO flows
@@ -1223,7 +748,7 @@ function isAuthLoginUrl(url) {
  * Report-only headers are safe to strip since they should never block.
  */
 function stripCspForAuthPages(responseHeaders, url) {
-  if (isTeamsDomain(url)) return;
+  if (isOutlookDomain(url)) return;
 
   for (const key of Object.keys(responseHeaders)) {
     if (key.toLowerCase() === 'content-security-policy-report-only') {
@@ -1240,8 +765,6 @@ function stripCspForAuthPages(responseHeaders, url) {
 }
 
 function onHeadersReceivedHandler(details, callback) {
-  customBackgroundService.onHeadersReceivedHandler(details);
-
   stripCspForAuthPages(details.responseHeaders, details.url);
 
   callback({
@@ -1253,8 +776,6 @@ function onBeforeSendHeadersHandler(detail, callback) {
   if (intune?.isSsoUrl(detail.url)) {
     intune.addSsoCookie(detail, callback);
   } else {
-    customBackgroundService.addCustomBackgroundHeaders(detail, callback);
-
     callback({
       requestHeaders: detail.requestHeaders,
     });
@@ -1279,12 +800,7 @@ function onNewWindow(details) {
     console.info('[WINDOW_OPEN] Auth-related popup', { origin });
   }
 
-  if (new RegExp(config.meetupJoinRegEx).test(details.url)) {
-    if (config.onNewWindowOpenMeetupJoinUrlInApp) {
-      window.loadURL(details.url, { userAgent: config.chromeUserAgent });
-    }
-    return { action: "deny" };
-  } else if (
+  if (
     details.url === "about:blank" ||
     details.url === "about:blank#blocked"
   ) {
@@ -1313,33 +829,14 @@ function onPageTitleUpdated(_event, title) {
   window.webContents.send("page-title", title);
 }
 
-function onNavigationChanged() {
-  if (window?.webContents?.navigationHistory) {
-    const canGoBack = window.webContents.navigationHistory.canGoBack();
-    const canGoForward = window.webContents.navigationHistory.canGoForward();
-    window.webContents.send("navigation-state-changed", canGoBack, canGoForward);
-  }
-}
-
 function onWindowClosed() {
   console.debug("window closed");
-
-  // Close preview window before quitting to prevent race conditions
-  const previewWindow = screenSharingService?.getPreviewWindow();
-  if (previewWindow && !previewWindow.isDestroyed()) {
-    console.debug("[SCREEN_SHARE_DIAG] Closing preview window before app quit");
-    previewWindow.close();
-    screenSharingService.setPreviewWindow(null);
-    screenSharingService.setSelectedSource(null);
-  }
 
   window = null;
   app.quit();
 }
 
 function addEventHandlers() {
-  customBackgroundService.initializeCustomBGServiceURL();
-
   // After resuming from sleep, check if auth cookies expired during suspend.
   // Electron on Linux lacks OS-level auth brokers (WAM/Keychain) that browsers
   // use to transparently refresh tokens, so we handle expiry ourselves.
@@ -1376,19 +873,13 @@ function addEventHandlers() {
   window.on("closed", onWindowClosed);
   window.webContents.addListener("before-input-event", onBeforeInput);
 
-  // Navigation state change handlers
-  window.webContents.on("did-navigate", onNavigationChanged);
-  window.webContents.on("did-navigate-in-page", onNavigationChanged);
-
   // Pre-fill/advance the Microsoft/federated web login page (no-op unless one
   // of auth.webLogin.user / auth.webLogin.passwordCommand / auth.webLogin.verifyMethod is set).
   ssoPasswordPrefill.attach(window, config);
 }
 
 function getWebRequestFilterFromURL() {
-  const filter = customBackgroundService.isCustomBackgroundHttpProtocol()
-    ? { urls: ["http://*/*"] }
-    : { urls: ["https://*/*"] };
+  const filter = { urls: ["https://*/*"] };
   if (intune) {
     intune.setupUrlFilter(filter);
   }
@@ -1407,10 +898,7 @@ function onBeforeInput(event, input) {
     return;
   }
 
-  // Keyboard history navigation, independent of the Teams DOM. The injected
-  // on-screen back/forward controls (navigationButtons.js) break whenever
-  // Microsoft restructures the top bar (#2671); these accelerators are the
-  // layout-independent fallback. Keys are platform-specific: on macOS,
+  // Keyboard history navigation. Keys are platform-specific: on macOS,
   // Option(Alt)+Left/Right is the system word-navigation shortcut inside text
   // fields, so stealing it would break message editing — macOS uses the
   // standard Cmd+[ / Cmd+] instead, while other platforms use the

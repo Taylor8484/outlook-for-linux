@@ -4,7 +4,7 @@ const path = require("node:path");
 const electron = require("electron");
 
 /**
- * Cache Management Module for Teams for Linux
+ * Cache Management Module for Outlook for Linux
  * Addresses issue #1756: Daily logout due to cache overflow
  *
  * This module provides automatic cache cleanup to prevent OAuth token corruption
@@ -32,16 +32,16 @@ class CacheManager {
     this.checkIntervalMs = config.cacheCheckIntervalMs || 60 * 60 * 1000; // 1 hour
     this.isRunning = false;
 
-    // Extract partition name from config (e.g., "persist:teams-4-linux" -> "teams-4-linux")
+    // Extract partition name from config (e.g., "persist:outlook-4-linux" -> "outlook-4-linux")
     this.partitionName = this.extractPartitionName(
-      config.partition || "persist:teams-4-linux"
+      config.partition || "persist:outlook-4-linux"
     );
   }
 
   /**
    * Extract the partition directory name from the partition string
-   * @param {string} partition - The partition string like "persist:teams-4-linux"
-   * @returns {string} - The directory name like "teams-4-linux"
+   * @param {string} partition - The partition string like "persist:outlook-4-linux"
+   * @returns {string} - The directory name like "outlook-4-linux"
    */
   extractPartitionName(partition) {
     // Remove "persist:" prefix if present

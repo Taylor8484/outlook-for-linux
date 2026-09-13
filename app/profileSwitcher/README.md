@@ -12,8 +12,9 @@ window's `contentView` as the **topmost** child.
 
 - **At rest:** the view is a small square (`SWITCHER_PILL_SIZE`) flush to the
   window's bottom-left corner, showing just the active profile's avatar pill.
-  Teams' left rail is empty down there, so nothing functional is covered — and
-  profile views are **never inset** (they fill the whole window).
+  The corner was chosen upstream because Teams' left rail is empty down there;
+  it has not yet been re-checked against Outlook's layout. Profile views are
+  **never inset** (they fill the whole window).
 - **Dropdown open:** clicking the pill calls `setExpanded(true)`;
   `ProfileViewManager` grows the view to cover the whole content area so its
   transparent **scrim** dims the app and a click anywhere outside the dropdown
@@ -25,7 +26,7 @@ window's `contentView` as the **topmost** child.
 
 ### Why bottom-left (and not a top strip / title bar)
 
-An earlier iteration used a full-width top strip; on the root profile it
+An earlier upstream iteration (in teams-for-linux) used a full-width top strip; on the root profile it
 overlapped Teams' global search + back/forward, and every alternative top-band
 position hit some Teams control (search center, nav left, account menu right)
 (#2661 review). Teams' **bottom-left** is empty, so the pill lives there and
@@ -33,7 +34,7 @@ covers nothing. A native title-bar button isn't an option on Linux — with the
 native frame the window controls are WM-drawn, and going frameless to draw them
 ourselves is a CSD/SSD minefield, explicitly out of scope.
 
-Profile 0 (the legacy `persist:teams-4-linux` partition) runs on the **root
+Profile 0 (the legacy `persist:outlook-4-linux` partition) runs on the **root
 window's `webContents`**, not a `WebContentsView`. Because the pill is a small
 corner overlay (not a reserved strip), Profile 0 needs no special handling and
 no auth-path rerouting.

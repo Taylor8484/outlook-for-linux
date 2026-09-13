@@ -1,7 +1,7 @@
 # SSO Password Pre-fill Module
 
 Drives the Microsoft / federated **web** login page so you don't retype
-credentials every launch when your organisation expires the Teams session
+credentials every launch when your organisation expires the Outlook session
 frequently: fills the email (static value) and password (from a command),
 optionally advances each step, and optionally picks an MFA method.
 
@@ -51,7 +51,7 @@ Example `config.json`:
   "auth": {
     "webLogin": {
       "user": "you@example.org",
-      "passwordCommand": "pass show work/teams",
+      "passwordCommand": "pass show work/outlook",
       "autoSubmit": true,
       "verifyMethod": "Text"
     }

@@ -37,7 +37,7 @@ keep the input open if the backend rejects — losing typed input on a
 validation error was a UX bug the original `send`/`on` shape produced.
 Remove and close stay on `send`/`on` since neither has user input to
 preserve. All three follow the same single-instance dispatch pattern as
-`JoinMeetingDialog` and `AddProfileDialog` — listeners are registered
+`AddProfileDialog` — listeners are registered
 exactly once and route through whichever dialog is currently visible.
 
 ## Lifecycle

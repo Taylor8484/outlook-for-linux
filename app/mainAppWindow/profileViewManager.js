@@ -2,7 +2,7 @@ const { WebContentsView, session, ipcMain } = require("electron");
 const path = require("node:path");
 const SenderProfileMap = require("./senderProfileMap");
 
-const LEGACY_PARTITION = "persist:teams-4-linux";
+const LEGACY_PARTITION = "persist:outlook-4-linux";
 
 // The switcher renders as a small avatar pill anchored in the BOTTOM-LEFT
 // corner (Teams' left rail is empty there, so nothing is covered — unlike the
@@ -15,19 +15,19 @@ const SWITCHER_PILL_SIZE = 56;
 // area so its scrim dims the whole app (a click anywhere outside the dropdown
 // dismisses it) and the dropdown — anchored above the pill — is not clipped.
 
-// Hostnames the bootstrap-on-navigate listener treats as "Teams was
+// Hostnames the bootstrap-on-navigate listener treats as "Outlook was
 // successfully reached" — i.e. the post-login destinations. We
 // deliberately exclude `login.microsoftonline.com` and other pre-auth
 // URLs so navigating to the login page (which sets its own cookies on
 // the partition) does not falsely trigger bootstrap.
-const TEAMS_HOST_RE =
-  /(^|\.)teams\.(microsoft\.com|live\.com|cloud\.microsoft)$/;
+const OUTLOOK_HOST_RE =
+  /^outlook\.(office\.com|office365\.com|cloud\.microsoft|live\.com)$/;
 
-function isTeamsNavigationUrl(url) {
+function isOutlookNavigationUrl(url) {
   if (!url || typeof url !== "string") return false;
   try {
     const { protocol, hostname } = new URL(url);
-    return protocol === "https:" && TEAMS_HOST_RE.test(hostname);
+    return protocol === "https:" && OUTLOOK_HOST_RE.test(hostname);
   } catch {
     return false;
   }
@@ -47,6 +47,10 @@ const AUTH_COOKIE_NAMES = new Set([
   "SignInStateCookie",
   "FedAuth",
   "rtFa",
+  // Personal Microsoft accounts (outlook.live.com) sign in through
+  // login.live.com, which sets its own session cookies instead of ESTSAUTH.
+  "MSPAuth",
+  "__Host-MSAAUTH",
 ]);
 
 function hasAuthCookie(cookies) {
@@ -60,17 +64,17 @@ function hasAuthCookie(cookies) {
  * (ADR-020). Owns the per-profile `WebContentsView` overlays that sit on
  * top of the main `BrowserWindow`'s content area.
  *
- * Architecture: Profile 0 (the legacy `persist:teams-4-linux` partition)
+ * Architecture: Profile 0 (the legacy `persist:outlook-4-linux` partition)
  * lives on the root window's `webContents` — it is the existing main
  * window we have today. Switching to Profile 0 hides every overlay so
  * the underlying root window is visible. Adding a new profile creates a
- * `WebContentsView` against `persist:teams-profile-{uuid}`; switching to
+ * `WebContentsView` against `persist:outlook-profile-{uuid}`; switching to
  * that profile shows the matching overlay over the root window.
  *
  * No view is created for legacy-partition profiles; the root window
  * already serves that role. This avoids running Teams twice in the same
  * partition and keeps the scope of 1c.1 surgical (no rerouting of the
- * existing auth-recovery or `msteams://` deep-link handlers, both of
+ * existing auth-recovery or command-line URL handlers, both of
  * which operate on `window.webContents`).
  *
  * Subscribes to `profilesManager` lifecycle events so that profile
@@ -81,7 +85,6 @@ class ProfileViewManager {
   #window;
   #profilesManager;
   #config;
-  #bindDisplayMediaHandler;
   #views = new Map();
   // Phase 2 foundation: webContents → profile attribution for main-process
   // IPC handlers (tray/badge/notification aggregation consumes this next).
@@ -106,16 +109,11 @@ class ProfileViewManager {
    * @param {ProfilesManager} profilesManager
    * @param {object} config  Loaded app config (need `chromeUserAgent`,
    *                         `url`, and config gate `multiAccount.enabled`)
-   * @param {(session: Electron.Session) => void} bindDisplayMediaHandler
-   *   Binds the in-app screen-share picker to a session. Called for each
-   *   profile view's partition session so multi-account screen-share
-   *   matches Profile 0's behaviour (#2529).
    */
-  constructor(window, profilesManager, config, bindDisplayMediaHandler) {
+  constructor(window, profilesManager, config) {
     this.#window = window;
     this.#profilesManager = profilesManager;
     this.#config = config;
-    this.#bindDisplayMediaHandler = bindDisplayMediaHandler;
     this.#registry = new SenderProfileMap(profilesManager);
   }
 
@@ -184,7 +182,7 @@ class ProfileViewManager {
     // `bootstrapProfileZeroIfNeeded` short-circuits on its guard and
     // the cookie read is skipped.
     this.#navigationHandler = (_event, url) => {
-      if (!isTeamsNavigationUrl(url)) return;
+      if (!isOutlookNavigationUrl(url)) return;
       this.bootstrapProfileZeroIfNeeded().catch((error) => {
         console.warn(
           "[ProfileViewManager] Bootstrap-on-navigate failed",
@@ -217,7 +215,7 @@ class ProfileViewManager {
   }
 
   /**
-   * Bootstrap Profile 0 from the legacy `persist:teams-4-linux` partition
+   * Bootstrap Profile 0 from the legacy `persist:outlook-4-linux` partition
    * if (a) no profiles exist yet and (b) the legacy partition has cookies.
    * The cookies-only heuristic catches every realistic warm-Teams session
    * while keeping the check to a single async call (ADR-020 § "First-run
@@ -412,18 +410,13 @@ class ProfileViewManager {
         spellcheck: true,
         webviewTag: true,
         // SECURITY: matches the root window's webPreferences
-        // (browserWindowManager.js). Required for Teams DOM access via
-        // ReactHandler; compensated by IPC validation.
+        // (browserWindowManager.js). Required for the preload Notification
+        // override; compensated by IPC validation.
         contextIsolation: false,
         nodeIntegration: false,
         sandbox: false,
       },
     });
-
-    // Rebind the in-app screen-share picker on this profile's session.
-    // `setDisplayMediaRequestHandler` is per-session and the root window's
-    // binding does not carry across to profile partitions (#2529).
-    this.#bindDisplayMediaHandler(view.webContents.session);
 
     const wcId = view.webContents.id;
     const profileId = profile.id;

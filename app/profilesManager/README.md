@@ -28,7 +28,7 @@ Records live in `settingsStore` (electron-store, `settings.json`) under
         {
           "id": "11111111-2222-3333-4444-555555555555",
           "name": "My account",
-          "partition": "persist:teams-profile-11111111-...",
+          "partition": "persist:outlook-profile-11111111-...",
           "avatarColor": "hsl(217, 65%, 45%)",
           "avatarInitials": "MA",
           "disableNotifications": false,
@@ -55,7 +55,7 @@ Records live in `settingsStore` (electron-store, `settings.json`) under
 | `add(record)` | `Profile` | Generates `id`, derives `partition`, validates `name`; emits `add` |
 | `update(id, patch)` | `Profile` | Drops `id` / `partition` from the patch; emits `update` |
 | `remove(id)` | `{ removedId, activeId }` | Falls back to first remaining profile (or null) when removing the active one; emits `remove` |
-| `bootstrapLegacyProfile(name?)` | `Profile` | **Main-process only.** Creates Profile 0 against `persist:teams-4-linux` so the user's existing login survives the first flag flip (ADR-020 § "First-run bootstrap"). Throws if any profile already exists. Not exposed via IPC — a renderer being able to point a profile at an arbitrary partition string would let it hijack any session. |
+| `bootstrapLegacyProfile(name?)` | `Profile` | **Main-process only.** Creates Profile 0 against `persist:outlook-4-linux` so the user's existing login survives the first flag flip (ADR-020 § "First-run bootstrap"). Throws if any profile already exists. Not exposed via IPC — a renderer being able to point a profile at an arbitrary partition string would let it hijack any session. |
 
 ## Lifecycle hooks
 
@@ -88,9 +88,7 @@ surface and do not require allowlisting.
 
 - No switcher UI, no Profiles menu entry, no `Ctrl+Alt+1…5` shortcuts —
   those land in Phase 1c.2 alongside the renderer dialogs.
-- No screen-preview-partition swap, no `CustomBackground` instance
-  refactor, no `cleanExpiredAuthCookies` rework — those are Phase 1c.3
-  cleanups.
+- No `cleanExpiredAuthCookies` rework — that is a Phase 1c.3 cleanup.
 
 ## Companion modules
 

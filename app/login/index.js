@@ -12,7 +12,7 @@ const firstLoginTryByWebContents = new WeakMap();
 // Single submitForm listener registered once at module load; dispatches to
 // the currently-open login dialog via this pointer. Avoids per-dialog
 // registration churn and the need for removeListener. See
-// app/joinMeetingDialog/index.js for the same pattern.
+// app/_shared/securePrompt.js for the same pattern.
 let activeLoginHandler = null;
 let handlersRegistered = false;
 
