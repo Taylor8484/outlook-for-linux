@@ -11,6 +11,10 @@ defaults:
   run:
     shell: bash
 
+# Uploading to the Snap Store needs the SNAPCRAFT_TOKEN secret. Secrets cannot
+# be read in a step `if`, so each job maps it into SNAPCRAFT_STORE_CREDENTIALS
+# and the upload steps are skipped when it is empty (for example on a fork).
+
 jobs:
   snap-candidate:
     runs-on: ubuntu-latest
@@ -50,6 +54,7 @@ jobs:
         run: npm run dist:linux:snap -- --publish never
 
       - name: Publish to candidate channel
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         run: |
           SNAP_FILE=$(ls dist/*.snap)
           echo "Uploading ${SNAP_FILE} to candidate channel"
@@ -90,6 +95,7 @@ jobs:
         run: npm run dist:linux:snap:armv7l -- --publish never
 
       - name: Publish to candidate channel
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         run: |
           SNAP_FILE=$(ls dist/*.snap)
           echo "Uploading ${SNAP_FILE} to candidate channel"
@@ -110,10 +116,10 @@ jobs:
         # electron-builder's deprecated core22 `snap` target invokes
         # (`snapcraft snap --output`), so the native-arm64 build fails. Pin
         # below 9.0.0 until the snap build migrates to the core24 `snapcraft`
-        # target, which uses `snapcraft pack` (#2590, #2592). The amd64 and
-        # armv7l jobs pack via app-builder directly and are unaffected. A
-        # first core24 migration (#2758) shipped snaps that core-dump on
-        # launch and was reverted (#2905), restoring this pin.
+        # target, which uses `snapcraft pack` (teams-for-linux #2590, #2592).
+        # The amd64 and armv7l jobs pack via app-builder directly and are
+        # unaffected. A first core24 migration (#2758) shipped snaps that
+        # core-dump on launch and was reverted (#2905), restoring this pin.
         uses: samuelmeuli/action-snapcraft@d33c176a9b784876d966f80fb1b461808edc0641 # v2.1.1
         with:
           channel: 8.x/stable
@@ -143,6 +149,7 @@ jobs:
         run: npm run dist:linux:snap:arm64 -- --publish never
 
       - name: Publish to candidate channel
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         run: |
           SNAP_FILE=$(ls dist/*.snap)
           echo "Uploading ${SNAP_FILE} to candidate channel"

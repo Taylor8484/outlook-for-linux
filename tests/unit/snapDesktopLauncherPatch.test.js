@@ -91,7 +91,7 @@ function runXdgLinksBlock({ scriptPath, placement, emptyXdgDir = false }) {
 		// /mnt).
 		const fsRoot = join(root, 'pad-1', 'pad-2', 'pad-3', 'fs');
 		const realHome = join(fsRoot, 'home', 'user');
-		const snapHome = join(realHome, 'snap', 'teams-for-linux', '2396');
+		const snapHome = join(realHome, 'snap', 'outlook-for-linux', '2396');
 		mkdirSync(snapHome, { recursive: true });
 
 		const xdgDir =

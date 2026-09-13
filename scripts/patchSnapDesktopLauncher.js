@@ -9,7 +9,7 @@
  *
  *   #!/bin/bash -e
  *   exec "$SNAP/desktop-init.sh" "$SNAP/desktop-common.sh" \
- *        "$SNAP/desktop-gnome-specific.sh" "$SNAP/teams-for-linux" ...
+ *        "$SNAP/desktop-gnome-specific.sh" "$SNAP/outlook-for-linux" ...
  *
  * `desktop-common.sh` also starts with `#!/bin/bash -e` and contains:
  *
@@ -75,7 +75,7 @@ const TEMPLATE_ARCH_BY_ARCH = new Map([
   [Arch.armv7l, "armhf"],
 ]);
 
-const PATCH_MARKER = "teams-for-linux #2946";
+const PATCH_MARKER = "outlook-for-linux snap launcher patch";
 
 // The exact block shipped by both copies of desktop-common.sh. Matched literally
 // (indexOf, no regex) so a changed upstream script fails loudly instead of

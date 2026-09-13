@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - develop-outlook
     paths:
       - 'docs-site/**'
       - '.github/workflows/docs.yml'
@@ -86,8 +86,8 @@ jobs:
     # Holds the pages concurrency group like the others; the deploy itself is a
     # single API-backed step, so this is a backstop rather than a real bound.
     timeout-minutes: 10
-    # Only deploy on main branch pushes
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Only deploy on develop-outlook branch pushes
+    if: github.ref == 'refs/heads/develop-outlook' && github.event_name == 'push'
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
@@ -102,8 +102,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-    # Only run for PRs and non-main branch pushes
-    if: github.ref != 'refs/heads/main'
+    # Only run for PRs and non-develop-outlook branch pushes
+    if: github.ref != 'refs/heads/develop-outlook'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

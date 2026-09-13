@@ -3,7 +3,7 @@ name: Snap Build
 on:
   push:
     branches:
-      - main
+      - develop-outlook
   pull_request:
   workflow_dispatch:
 
@@ -13,6 +13,11 @@ permissions: {}
 defaults:
   run:
     shell: bash
+
+# Publishing to the Snap Store needs the SNAPCRAFT_TOKEN secret. Secrets cannot
+# be read in a step `if`, so each job maps it into SNAPCRAFT_STORE_CREDENTIALS
+# and the publish steps check that env var. Without the secret (for example on
+# a fork) the snaps are still built and uploaded as workflow artifacts.
 
 jobs:
   snap:
@@ -48,7 +53,7 @@ jobs:
           npm run postinstall
 
       - name: Set edge version with commit SHA
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: |
           SHA=$(git rev-parse --short HEAD)
           node -e "
@@ -59,19 +64,19 @@ jobs:
           "
           echo "Snap edge version: $(node -p "require('./package.json').version")"
 
-      - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+      - name: Build and publish to Snap Store
+        if: github.ref == 'refs/heads/develop-outlook' && env.SNAPCRAFT_STORE_CREDENTIALS != ''
         run: npm run dist:linux:snap -- --publish always
 
-      - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+      - name: Build without publishing
+        if: github.ref != 'refs/heads/develop-outlook' || env.SNAPCRAFT_STORE_CREDENTIALS == ''
         run: npm run dist:linux:snap -- --publish never
 
-      - name: Upload PR artifacts
-        if: github.ref != 'refs/heads/main'
+      - name: Upload snap artifacts
+        if: github.ref != 'refs/heads/develop-outlook' || env.SNAPCRAFT_STORE_CREDENTIALS == ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-snap-x64
+          name: outlook-for-linux-snap-x64
           path: dist/*.snap
           retention-days: 30
           compression-level: 0
@@ -106,7 +111,7 @@ jobs:
           npm run postinstall
 
       - name: Set edge version with commit SHA
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: |
           SHA=$(git rev-parse --short HEAD)
           node -e "
@@ -117,19 +122,19 @@ jobs:
           "
           echo "Snap edge version: $(node -p "require('./package.json').version")"
 
-      - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+      - name: Build and publish to Snap Store
+        if: github.ref == 'refs/heads/develop-outlook' && env.SNAPCRAFT_STORE_CREDENTIALS != ''
         run: npm run dist:linux:snap:armv7l -- --publish always
 
-      - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+      - name: Build without publishing
+        if: github.ref != 'refs/heads/develop-outlook' || env.SNAPCRAFT_STORE_CREDENTIALS == ''
         run: npm run dist:linux:snap:armv7l -- --publish never
 
-      - name: Upload PR artifacts
-        if: github.ref != 'refs/heads/main'
+      - name: Upload snap artifacts
+        if: github.ref != 'refs/heads/develop-outlook' || env.SNAPCRAFT_STORE_CREDENTIALS == ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-snap-armv7l
+          name: outlook-for-linux-snap-armv7l
           path: dist/*.snap
           retention-days: 30
           compression-level: 0
@@ -149,10 +154,10 @@ jobs:
         # electron-builder's deprecated core22 `snap` target invokes
         # (`snapcraft snap --output`), so the native-arm64 build fails. Pin
         # below 9.0.0 until the snap build migrates to the core24 `snapcraft`
-        # target, which uses `snapcraft pack` (#2590, #2592). The amd64 and
-        # armv7l jobs pack via app-builder directly and are unaffected. A
-        # first core24 migration (#2758) shipped snaps that core-dump on
-        # launch and was reverted (#2905), restoring this pin.
+        # target, which uses `snapcraft pack` (teams-for-linux #2590, #2592).
+        # The amd64 and armv7l jobs pack via app-builder directly and are
+        # unaffected. A first core24 migration (#2758) shipped snaps that
+        # core-dump on launch and was reverted (#2905), restoring this pin.
         uses: samuelmeuli/action-snapcraft@d33c176a9b784876d966f80fb1b461808edc0641 # v2.1.1
         with:
           channel: 8.x/stable
@@ -177,7 +182,7 @@ jobs:
           npm run postinstall
 
       - name: Set edge version with commit SHA
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: |
           SHA=$(git rev-parse --short HEAD)
           node -e "
@@ -188,20 +193,19 @@ jobs:
           "
           echo "Snap edge version: $(node -p "require('./package.json').version")"
 
-      - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+      - name: Build and publish to Snap Store
+        if: github.ref == 'refs/heads/develop-outlook' && env.SNAPCRAFT_STORE_CREDENTIALS != ''
         run: npm run dist:linux:snap:arm64 -- --publish always
 
-      - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+      - name: Build without publishing
+        if: github.ref != 'refs/heads/develop-outlook' || env.SNAPCRAFT_STORE_CREDENTIALS == ''
         run: npm run dist:linux:snap:arm64 -- --publish never
 
-      - name: Upload PR artifacts
-        if: github.ref != 'refs/heads/main'
+      - name: Upload snap artifacts
+        if: github.ref != 'refs/heads/develop-outlook' || env.SNAPCRAFT_STORE_CREDENTIALS == ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-snap-arm64
+          name: outlook-for-linux-snap-arm64
           path: dist/*.snap
           retention-days: 30
           compression-level: 0
-

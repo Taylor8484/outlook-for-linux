@@ -5,8 +5,8 @@ import { execFileSync as run } from "node:child_process";
 import { existsSync } from "node:fs";
 
 const PR_NUMBER = process.env.PR_NUMBER;
-const REPO = process.env.GITHUB_REPOSITORY || "IsmaelMartinez/teams-for-linux";
-const MAINTAINER = (process.env.MAINTAINER_LOGIN || "IsmaelMartinez").toLowerCase();
+const REPO = process.env.GITHUB_REPOSITORY || "Taylor8484/outlook-for-linux";
+const MAINTAINER = (process.env.MAINTAINER_LOGIN || "Taylor8484").toLowerCase();
 
 const THANKS_HEADING = "### Thanks";
 const FOOTER_MARKER = "\n---\nThis PR was generated with [Release Please]";

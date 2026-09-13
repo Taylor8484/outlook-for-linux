@@ -1,21 +1,20 @@
 {
-  "name": "teams-for-linux",
-  "version": "2.21.0",
+  "name": "outlook-for-linux",
+  "version": "2.0.0",
   "main": "app/index.js",
-  "description": "Unofficial client for Microsoft Teams for Linux",
-  "homepage": "https://github.com/IsmaelMartinez/teams-for-linux",
+  "description": "Unofficial client for Microsoft Outlook for Linux",
+  "homepage": "https://github.com/Taylor8484/outlook-for-linux",
   "keywords": [
-    "Teams",
-    "Microsoft Teams"
+    "Outlook",
+    "Microsoft Outlook"
   ],
   "repository": {
     "type": "git",
-    "url": "git+ssh://github.com/IsmaelMartinez/teams-for-linux"
+    "url": "git+ssh://github.com/Taylor8484/outlook-for-linux"
   },
   "author": {
-    "name": "Ismael Martinez",
-    "email": "ismaelmartinez@gmail.com",
-    "url": "https://github.com/IsmaelMartinez/"
+    "name": "Taylor Pike",
+    "url": "https://github.com/Taylor8484/"
   },
   "license": "GPL-3.0-or-later",
   "scripts": {
@@ -24,9 +23,6 @@
     "test:unit": "node --test 'tests/unit/*.test.js'",
     "test:e2e": "playwright test",
     "test:authenticated": "playwright test --config playwright.authenticated.config.js",
-    "cross-distro": "cd tests/cross-distro && ./run.sh",
-    "cross-distro:list": "cd tests/cross-distro && ./run.sh --list",
-    "cross-distro:smoke": "cd tests/cross-distro && ./scripts/smoke-check.sh",
     "prestart": "npm ci",
     "start": "electron ./app --trace-warnings",
     "start:dev": "electron ./app --trace-warnings --no-sandbox",
@@ -60,7 +56,6 @@
     "electron-store": "11.0.2",
     "electron-updater": "^6.8.9",
     "electron-window-state": "5.0.3",
-    "mqtt": "^5.15.2",
     "yargs": "^18.1.0"
   },
   "devDependencies": {
@@ -78,16 +73,10 @@
     "follow-redirects": "^1.16.0"
   },
   "build": {
-    "appId": "teams-for-linux",
+    "appId": "outlook-for-linux",
     "asarUnpack": [
       "node_modules/spellchecker/vendor/hunspell_dictionaries"
     ],
-    "protocols": {
-      "name": "msteams",
-      "schemes": [
-        "msteams"
-      ]
-    },
     "extraResources": [
       {
         "from": "app/assets/sounds",
@@ -95,18 +84,18 @@
       }
     ],
     "linux": {
-      "category": "Chat;Network;Office",
+      "category": "Network;Office;Email",
       "packageCategory": "net",
-      "executableName": "teams-for-linux",
-      "synopsis": "Teams for Linux",
-      "description": "Unofficial Microsoft Teams client for Linux using Electron. It uses the Web App and wraps it as a standalone application using Electron.",
+      "executableName": "outlook-for-linux",
+      "synopsis": "Outlook for Linux",
+      "description": "Unofficial Microsoft Outlook client for Linux using Electron. It uses the Web App and wraps it as a standalone application using Electron.",
       "executableArgs": [
         "--ozone-platform=x11"
       ],
       "desktop": {
         "entry": {
-          "Name": "Teams for Linux",
-          "Comment": "Unofficial client for Microsoft Teams for Linux"
+          "Name": "Outlook for Linux",
+          "Comment": "Unofficial client for Microsoft Outlook for Linux"
         }
       },
       "target": [
@@ -147,7 +136,7 @@
       ]
     },
     "snap": {
-      "summary": "Teams for Linux",
+      "summary": "Outlook for Linux",
       "confinement": "strict",
       "grade": "stable",
       "base": "core22",
@@ -156,13 +145,10 @@
       ],
       "plugs": [
         "default",
-        "audio-record",
-        "camera",
         "hardware-observe",
         "network-bind",
         "network-manager-observe",
         "removable-media",
-        "screen-inhibit-control",
         "system-observe",
         "upower-observe"
       ],
@@ -176,10 +162,6 @@
         "dmg",
         "zip"
       ],
-      "extendInfo": {
-        "NSCameraUsageDescription": "We need camera access for video calls.",
-        "NSMicrophoneUsageDescription": "We need microphone access for audio."
-      },
       "hardenedRuntime": true,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist"

@@ -15,7 +15,7 @@ const { execSync } = require('node:child_process');
 
 const APP_DIR = path.join(__dirname, '..', 'app');
 const DOCS_OUTPUT = path.join(__dirname, '..', 'docs-site', 'docs', 'development', 'ipc-api-generated.md');
-const GITHUB_REPO = 'https://github.com/IsmaelMartinez/teams-for-linux';
+const GITHUB_REPO = 'https://github.com/Taylor8484/outlook-for-linux';
 
 // IPC channel categories based on file location
 const CATEGORIES = {
@@ -163,7 +163,7 @@ This document lists all IPC (Inter-Process Communication) channels registered in
     markdown += `|---------|------|-------------|----------|\n`;
 
     for (const channel of categoryChannels.sort((a, b) => a.name.localeCompare(b.name))) {
-      const location = `[\`${channel.file}:${channel.lineNumber}\`](${GITHUB_REPO}/blob/develop/${channel.file}#L${channel.lineNumber})`;
+      const location = `[\`${channel.file}:${channel.lineNumber}\`](${GITHUB_REPO}/blob/develop-outlook/${channel.file}#L${channel.lineNumber})`;
       markdown += `| \`${channel.name}\` | ${channel.type} | ${channel.description} | ${location} |\n`;
     }
 

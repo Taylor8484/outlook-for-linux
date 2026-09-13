@@ -27,7 +27,6 @@ lint` is required before every commit.
   - [ ] `npm run test:unit`
   - [ ] `npm run test:e2e`
   - [ ] Ran the app manually (`npm start`) and exercised the affected path
-  - [ ] Cross-distro / packaging build (`npm run cross-distro`)
 -->
 
 ## Documentation

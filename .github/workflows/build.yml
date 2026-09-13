@@ -6,7 +6,7 @@ env:
 on:
   push:
     branches:
-      - main
+      - develop-outlook
   pull_request:
   workflow_dispatch:
 
@@ -144,18 +144,18 @@ jobs:
         run: npm run generate-release-info
 
       - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: npm run dist:linux:x64 -- --publish always
 
       - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         run: npm run dist:linux:x64 -- --publish never
 
       - name: Upload PR artifacts
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-linux-x64
+          name: outlook-for-linux-linux-x64
           path: |
             dist/*.deb
             dist/*.rpm
@@ -191,18 +191,18 @@ jobs:
         run: npm run generate-release-info
 
       - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: npm run dist:linux:arm64 -- --publish always
 
       - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         run: npm run dist:linux:arm64 -- --publish never
 
       - name: Upload PR artifacts
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-linux-arm64
+          name: outlook-for-linux-linux-arm64
           path: |
             dist/*.deb
             dist/*.rpm
@@ -238,18 +238,18 @@ jobs:
         run: npm run generate-release-info
 
       - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: npm run dist:linux:arm -- --publish always
 
       - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         run: npm run dist:linux:arm -- --publish never
 
       - name: Upload PR artifacts
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-linux-armv7l
+          name: outlook-for-linux-linux-armv7l
           path: |
             dist/*.deb
             dist/*.rpm
@@ -305,18 +305,18 @@ jobs:
       # updater is AppImage-only today (app/autoUpdater/index.js), so nothing
       # reads it yet — this just keeps it correct if that ever changes.
       - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: npm run dist:mac -- --publish always
 
       - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         run: npm run dist:mac -- --publish never
 
       - name: Upload PR artifacts (x64)
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-macos-x64
+          name: outlook-for-linux-macos-x64
           path: |
             dist/*.dmg
             !dist/*-arm64.dmg
@@ -326,10 +326,10 @@ jobs:
           compression-level: 0
 
       - name: Upload PR artifacts (arm64)
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-macos-arm64
+          name: outlook-for-linux-macos-arm64
           path: dist/*-arm64.dmg
           retention-days: 30
           compression-level: 0
@@ -361,18 +361,18 @@ jobs:
         run: npm run generate-release-info
 
       - name: Build for Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop-outlook'
         run: npm run dist:windows -- --publish always
 
       - name: Build for PR
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         run: npm run dist:windows -- --publish never
 
       - name: Upload PR artifacts
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop-outlook'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: teams-for-linux-windows-x64
+          name: outlook-for-linux-windows-x64
           path: dist/*.exe
           retention-days: 30
           compression-level: 6
