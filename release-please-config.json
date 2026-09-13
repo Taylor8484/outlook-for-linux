@@ -1,5 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "ae644b69670b1559e28bf9cd2493f18f4d738af1",
   "pull-request-header": ":robot: I have prepared a release *beep* *boop*",
   "packages": {
     ".": {
