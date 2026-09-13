@@ -1,12 +1,12 @@
-# Teams for Linux Documentation Site
+# Outlook for Linux Documentation Site
 
-This directory contains the Docusaurus-based documentation website for Teams for Linux.
+This directory contains the Docusaurus-based documentation website for Outlook for Linux.
 
 ## Quick Start
 
 ```bash
 # Install dependencies
-npm install
+npm ci
 
 # Start development server
 npm run start
@@ -20,18 +20,11 @@ npm run serve
 
 ## Deployment
 
-The documentation is automatically deployed to GitHub Pages when changes are pushed to the main branch.
+The documentation is deployed to GitHub Pages by the `.github/workflows/docs.yml` workflow.
 
-### Automatic Deployment
-- **Production**: Pushes to `main` branch automatically deploy to GitHub Pages
-- **Testing**: The `docs-test-deploy.yml` workflow can be manually triggered for test deployments
-
-### Manual Deployment Testing
-1. Go to GitHub Actions tab
-2. Select "Test Deploy Docusaurus (Development)" workflow
-3. Click "Run workflow"
-4. Optionally specify a test branch name
-5. Monitor the deployment process
+- **Production**: Pushes to the `develop-outlook` branch that touch `docs-site/**` automatically deploy to GitHub Pages
+- **Manual**: The workflow can also be run on demand from the GitHub Actions tab (`workflow_dispatch`)
+- **Pull requests**: Pull requests that touch `docs-site/**` run the workflow so build failures (for example broken links) are caught before merge
 
 ## Development
 
@@ -52,20 +45,21 @@ The documentation is automatically deployed to GitHub Pages when changes are pus
 docs-site/
 ├── docs/                 # Documentation pages (.md/.mdx)
 ├── src/
+│   ├── components/       # React components (e.g. ConfigExplorer)
 │   └── css/
 │       └── custom.css    # Custom styling
 ├── static/               # Static assets
 ├── docusaurus.config.ts  # Main configuration
-├── sidebars.ts          # Navigation structure
-└── package.json         # Dependencies and scripts
+├── sidebars.ts           # Navigation structure
+└── package.json          # Dependencies and scripts
 ```
 
 ## GitHub Pages Configuration
 
 The site is configured to deploy to GitHub Pages with:
-- **URL**: `https://ismaelmartinez.github.io/teams-for-linux/`
+- **URL**: `https://taylor8484.github.io/outlook-for-linux/`
 - **Source**: GitHub Actions deployment
-- **Base URL**: `/teams-for-linux/`
+- **Base URL**: `/outlook-for-linux/`
 
 ## Features
 
@@ -73,7 +67,7 @@ The site is configured to deploy to GitHub Pages with:
 - ✅ Dark/light theme support
 - ✅ Local search functionality with [@easyops-cn/docusaurus-search-local](https://github.com/easyops-cn/docusaurus-search-local)
 - ✅ Accessibility features
-- ✅ Microsoft Teams-inspired branding
+- ✅ Outlook-inspired blue branding
 - ✅ Mermaid diagram support
 - ✅ Enhanced markdown with admonitions
 

@@ -4,19 +4,23 @@ id: 009-automated-testing-strategy
 
 # ADR 009: Automated Testing Strategy
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. The constraints apply equally to wrapping Outlook on the web.
+:::
+
 ## Status
 
 ✅ Implemented
 
 ## Context
 
-Teams for Linux required a testing strategy to ensure application stability and prevent regressions. As an Electron application wrapping Microsoft Teams, several constraints affected the testing approach:
+The application required a testing strategy to ensure stability and prevent regressions. As an Electron application wrapping a Microsoft 365 web app (originally Microsoft Teams, now Outlook), several constraints affected the testing approach:
 
 **Key Constraints:**
 
 1. **Microsoft Authentication Wall**: Core application functionality requires authentication through Microsoft's login system, which cannot be mocked or bypassed
-2. **Third-Party DOM Dependency**: Teams' web interface is controlled by Microsoft and can change without notice
-3. **Multi-Platform Support**: Linux (X11/Wayland), macOS, and Windows all need testing
+2. **Third-Party DOM Dependency**: The web app's interface is controlled by Microsoft and can change without notice
+3. **Multi-Platform Support**: Linux (X11/Wayland) primarily, with macOS and Windows builds possible
 4. **Limited Development Resources**: Volunteer-maintained open source project with limited capacity for test maintenance
 
 **Investigation Date:** 2025 (Research Phase 1)
@@ -36,7 +40,7 @@ Teams for Linux required a testing strategy to ensure application stability and 
 
 - **Framework**: Playwright with Electron support
 - **Scope**: Smoke tests validating application launch and proper redirect to Microsoft login
-- **Location**: `tests/e2e/smoke.spec.js`
+- **Location**: `tests/e2e/smoke.spec.js` (plus feature-gate specs in `tests/e2e/`)
 - **Execution**: `npm run test:e2e`
 
 ### Test Isolation
@@ -53,7 +57,7 @@ Each test creates a unique temporary userData directory via `E2E_USER_DATA_DIR` 
 // Validates:
 // 1. Application launches successfully
 // 2. Main window opens
-// 3. Redirects to Microsoft login (teams.cloud.microsoft or login.microsoftonline.com)
+// 3. Redirects to the configured web app or Microsoft login (login.microsoftonline.com)
 ```
 
 ## Consequences
@@ -64,12 +68,12 @@ Each test creates a unique temporary userData directory via `E2E_USER_DATA_DIR` 
 - ✅ **Fast execution** - Tests complete in seconds, suitable for CI
 - ✅ **No authentication overhead** - No need to manage test credentials or tokens
 - ✅ **Cross-platform compatible** - Same tests work on Linux, macOS, Windows
-- ✅ **Low maintenance** - Simple tests are less likely to break from Teams UI changes
+- ✅ **Low maintenance** - Simple tests are less likely to break from web app UI changes
 
 ### Negative
 
 - ⚠️ **Limited coverage** - Post-authentication functionality not tested automatically
-- ⚠️ **Manual testing required** - Features like screen sharing, notifications, and MQTT need manual verification
+- ⚠️ **Manual testing required** - Features like notifications, the unread badge and SSO need manual verification
 - ⚠️ **No regression detection** - Feature bugs won't be caught by automated tests
 
 ### Neutral
@@ -86,10 +90,10 @@ Using Playwright's storage state to persist authentication:
 
 ```javascript
 // Save authenticated state after manual login
-await window.context().storageState({ path: 'tests/.auth/teams-user.json' });
+await window.context().storageState({ path: 'tests/.auth/user.json' });
 
 // Reuse in tests
-use: { storageState: 'tests/.auth/teams-user.json' }
+use: { storageState: 'tests/.auth/user.json' }
 ```
 
 **Why rejected:**
@@ -99,20 +103,22 @@ use: { storageState: 'tests/.auth/teams-user.json' }
 - Tests become flaky when authentication expires
 - Violates "minimal maintenance" goal for volunteer project
 
+An opt-in authenticated suite exists (`npm run test:authenticated`) for local use, but it is not a CI gate.
+
 ### Option 2: Unit/Integration Tests with Mocked Authentication
 
-Mock Graph API and Teams interfaces for isolated module testing:
+Mock Microsoft web app interfaces for isolated module testing:
 
 ```javascript
 vi.mock('electron', () => ({ /* mocked APIs */ }));
 ```
 
-**Why rejected:**
+**Why rejected as the primary strategy:**
 
 - High initial investment for setup
 - Mocks can become stale when APIs change
 - Doesn't validate real user experience
-- Would need significant refactoring of current codebase
+- Would need significant refactoring of the codebase
 
 ### Option 3: No Automated Testing
 
@@ -134,22 +140,19 @@ Rely entirely on manual testing and community feedback.
 
 ### Potential Expansions
 
-Low-effort additions that may be valuable:
+Low-effort additions that do not require authentication (several now exist under `tests/unit/`):
 
 1. **Configuration validation tests** - Validate config parsing without authentication
 2. **IPC security tests** - Verify channel allowlist enforcement
 3. **Module unit tests** - Test isolated utilities like `spellCheckProvider`, `cacheManager`
 
-These would not require authentication and could be added incrementally.
-
 ## Related
 
 - [Contributing Guide - Testing Section](../contributing.md#testing)
 - Playwright Configuration: `playwright.config.js`
-- Test Location: `tests/e2e/`
+- Test Location: `tests/e2e/`, `tests/unit/`
 
 ## References
 
 - [Playwright Electron API](https://playwright.dev/docs/api/class-electron)
 - [Electron Testing Guide](https://www.electronjs.org/docs/latest/tutorial/automated-testing)
-

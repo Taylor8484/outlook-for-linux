@@ -3,7 +3,7 @@
 Control logging behavior with console logging, [electron-log](https://www.npmjs.com/package/electron-log) integration, or disable logging entirely (since v1.9.0).
 
 :::info
-See [Configuration Documentation](configuration.md) for all available configuration options.
+See [Configuration Documentation](../configuration.md) for all available configuration options.
 :::
 
 ## Configuration Options
@@ -99,13 +99,13 @@ You can also configure logging via command line arguments:
 
 ```bash
 # Enable debug logging
-teams-for-linux --logConfig='{"transports":{"console":{"level":"debug"}}}'
+outlook-for-linux --logConfig='{"transports":{"console":{"level":"debug"}}}'
 
 # Disable all logging
-teams-for-linux --logConfig=false
+outlook-for-linux --logConfig=false
 
 # Use console logging only
-teams-for-linux --logConfig="console"
+outlook-for-linux --logConfig="console"
 ```
 
 ## Log Levels
@@ -149,7 +149,7 @@ When using file transport, you can configure:
 To diagnose logging issues, temporarily enable debug mode:
 
 ```bash
-teams-for-linux --logConfig='{"transports":{"console":{"level":"debug"}}}'
+outlook-for-linux --logConfig='{"transports":{"console":{"level":"debug"}}}'
 ```
 
 ## Limitations
@@ -160,5 +160,5 @@ Not all options available in [electron-log](https://github.com/megahertz/electro
 
 ## Related Documentation
 
-- [Configuration Options](configuration.md) - Complete configuration reference
-- [Troubleshooting](troubleshooting.md) - General troubleshooting guide
+- [Configuration Options](../configuration.md) - Complete configuration reference
+- [Troubleshooting](../troubleshooting.md) - General troubleshooting guide

@@ -4,18 +4,22 @@ id: 028-third-party-idp-otc-prefill
 
 # ADR 028: One-Time-Code Pre-fill on Third-Party Identity Providers
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. Issue and PR numbers refer to the upstream repository.
+:::
+
 ## Status
 
 ❌ Rejected
 
 ## Context
 
-[#2869](https://github.com/IsmaelMartinez/teams-for-linux/issues/2869) asked for a `totpCommand`
+upstream #2869 asked for a `totpCommand`
 companion to the shipped `auth.webLogin.passwordCommand`, so an authenticator code could be pulled
 from a password manager the same way a password already is.
 
 **Investigation Date:** August 2026
-**Attempted in:** [PR #2874](https://github.com/IsmaelMartinez/teams-for-linux/pull/2874)
+**Attempted in:** upstream PR #2874
 
 The password half works because `input[type=password]` is effectively universal. One-time-code
 fields are not. The attempt matched Entra's converged code page (`input[name="otc"]`,
@@ -60,8 +64,8 @@ extensions (no `.crx`), supports only `chrome.storage.local`, and has no concept
 extension actions, so there would be no toolbar UI either.
 
 This is the same wall behind
-[#2609](https://github.com/IsmaelMartinez/teams-for-linux/issues/2609) and its spike in
-[#2610](https://github.com/IsmaelMartinez/teams-for-linux/pull/2610). Allowlisting our binary in
+upstream #2609 and its spike in
+upstream #2610. Allowlisting our binary in
 `/etc/1password/custom_allowed_browsers` governs which browsers the 1Password app will speak to
 over that same extension-to-app channel; without an extension able to use native messaging, the
 allowlist alone is unlikely to achieve anything. That matches the fact that nobody has confirmed
@@ -71,7 +75,7 @@ the autofill shortcut filling an Electron window since the question was asked on
 
 Okta's modern [Interaction Code grant](https://developer.okta.com/docs/concepts/interaction-code/)
 is designed for applications that own the Okta relationship and requires an app registration inside
-each customer's org. Teams for Linux wraps Microsoft Teams and never owns that relationship. The
+each customer's org. Outlook for Linux wraps Outlook on the web and never owns that relationship. The
 classic `/api/v1/authn` sessionToken route is superseded and being retired.
 
 ## Consequences

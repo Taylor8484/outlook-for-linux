@@ -1,212 +1,87 @@
 # Installation Guide
 
-Multiple installation methods are available for Teams for Linux across different Linux distributions.
+Outlook for Linux is distributed as packages on GitHub Releases, and can also be built from source.
 
-:::info About Teams for Linux
-**Unofficial Microsoft Teams client for Linux** — a native desktop app that wraps the Teams web version with enhanced Linux integration including system notifications, tray integration, custom backgrounds, screen sharing, and multiple account profiles.
+:::info About Outlook for Linux
+**Unofficial Microsoft Outlook client for Linux**: a desktop app that wraps Outlook on the web with Linux integration including system notifications, a tray icon with unread badge, and multiple account profiles. Not affiliated with Microsoft.
 :::
 
-## Quick Installation
+## Download from GitHub Releases
 
-### Package Repositories (Recommended)
+1. Go to [GitHub Releases](https://github.com/Taylor8484/outlook-for-linux/releases)
+2. Download the package for your system. Builds are published for x64, arm64, and armv7l:
+   - **deb**: Debian, Ubuntu, and derivatives
+   - **rpm**: Fedora, RHEL, openSUSE, and derivatives
+   - **AppImage**: runs on most distributions without installation
+   - **tar.gz**: portable archive
 
-We maintain dedicated deb and rpm repositories hosted with ❤️ by [Nils Büchner](https://github.com/nbuechner).
-
-#### Debian/Ubuntu
-
-```bash
-sudo mkdir -p /etc/apt/keyrings
-sudo wget -qO /etc/apt/keyrings/teams-for-linux.asc https://repo.teamsforlinux.de/teams-for-linux.asc
-sh -c 'echo "Types: deb
-URIs: https://repo.teamsforlinux.de/debian/
-Suites: stable
-Components: main
-Signed-By: /etc/apt/keyrings/teams-for-linux.asc
-Architectures: amd64" | sudo tee /etc/apt/sources.list.d/teams-for-linux-packages.sources'
-sudo apt update && sudo apt install teams-for-linux
-```
-
-#### RHEL/Fedora/CentOS
+### Debian/Ubuntu (.deb)
 
 ```bash
-curl -1sLf -o /tmp/teams-for-linux.asc https://repo.teamsforlinux.de/teams-for-linux.asc
-sudo rpm --import /tmp/teams-for-linux.asc
-sudo curl -1sLf -o /etc/yum.repos.d/teams-for-linux.repo https://repo.teamsforlinux.de/rpm/teams-for-linux.repo
-sudo dnf install teams-for-linux
+sudo apt install ./outlook-for-linux_*.deb
 ```
 
-#### Beta Channel (Pre-releases)
+If you install with `dpkg -i` instead, run `sudo apt-get install -f` afterwards to pull in any missing dependencies.
 
-New versions are published to a `beta` channel first and promoted to `stable` after a few days of testing. Follow the beta channel if you want pre-releases and want to help test them before promotion.
-
-**Debian/Ubuntu** — same source as stable, with `Suites: beta`:
+### Fedora/RHEL (.rpm)
 
 ```bash
-sudo mkdir -p /etc/apt/keyrings
-sudo wget -qO /etc/apt/keyrings/teams-for-linux.asc https://repo.teamsforlinux.de/teams-for-linux.asc
-sh -c 'echo "Types: deb
-URIs: https://repo.teamsforlinux.de/debian/
-Suites: beta
-Components: main
-Signed-By: /etc/apt/keyrings/teams-for-linux.asc
-Architectures: amd64" | sudo tee /etc/apt/sources.list.d/teams-for-linux-packages.sources'
-sudo apt update && sudo apt install teams-for-linux
+# Fedora / RHEL 8+
+sudo dnf install ./outlook-for-linux-*.rpm
+
+# Older systems
+sudo rpm -i outlook-for-linux-*.rpm
 ```
 
-**RHEL/Fedora/CentOS** — use the beta repository:
-
-```bash
-curl -1sLf -o /tmp/teams-for-linux.asc https://repo.teamsforlinux.de/teams-for-linux.asc
-sudo rpm --import /tmp/teams-for-linux.asc
-sudo curl -1sLf -o /etc/yum.repos.d/teams-for-linux-beta.repo https://repo.teamsforlinux.de/rpm-beta/teams-for-linux-beta.repo
-sudo dnf install teams-for-linux
-```
-
-To return to stable releases, change `Suites: beta` back to `Suites: stable` (Debian/Ubuntu), or remove `/etc/yum.repos.d/teams-for-linux-beta.repo` and reinstall from the stable repository (RHEL/Fedora/CentOS).
-
-## Distribution-Specific Packages
-
-### Arch Linux (AUR)
-
-```bash
-# Using yay
-yay -S teams-for-linux
-
-# Using paru
-paru -S teams-for-linux
-
-# Manual AUR build
-git clone https://aur.archlinux.org/teams-for-linux.git
-cd teams-for-linux
-makepkg -si
-```
-
-[![AUR: teams-for-linux](https://img.shields.io/badge/AUR-teams--for--linux-blue.svg)](https://aur.archlinux.org/packages/teams-for-linux)
-
-### Ubuntu (Pacstall)
-
-```bash
-# Install Pacstall first (if not already installed)
-sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install)"
-
-# Install Teams for Linux
-pacstall -I teams-for-linux-deb
-```
-
-[![Pacstall: teams-for-linux-deb](https://img.shields.io/badge/Pacstall-teams--for--linux--deb-00958C)](https://github.com/pacstall/pacstall-programs/tree/master/packages/teams-for-linux-deb)
-
-### Vylen Linux
-
-```bash
-sudo emerald install teams-for-linux
-```
-
-[![Vylen Linux: teams-for-linux](https://img.shields.io/badge/Vylen_Linux-teams--for--linux-green)](https://vylen.gitlab.io/packages/#teams-for-linux)
-
-### Snap Store
-
-```bash
-sudo snap install teams-for-linux
-```
-
-:::tip Update Frequency
-Flatpak is the slowest update channel — it only receives a new version after the release has reached 100% across all other channels. Snap stable is the next slowest, with manual promotion after testing. If you prefer fewer update notifications, these are good choices. See the [Release Cadence](development/manual-release-process.md#release-cadence) section for details.
-:::
-
-[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/teams-for-linux)
-
-### Flathub
-
-```bash
-flatpak install flathub com.github.IsmaelMartinez.teams_for_linux
-```
-
-<a href='https://flathub.org/apps/details/com.github.IsmaelMartinez.teams_for_linux'><img width='170' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
-
-#### Flathub Beta Channel (Pre-releases)
-
-Pre-releases are published to the Flathub beta remote before they reach the stable Flathub build. Following the beta remote is the most useful thing a Flatpak user can do for this project, because sandbox and permission changes can be built by the Flathub buildbot but cannot be tested by the maintainer, who has no Linux desktop available.
-
-```bash
-flatpak remote-add --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
-flatpak install flathub-beta com.github.IsmaelMartinez.teams_for_linux//beta
-```
-
-The beta build is a separate branch of the same application ID, so it installs alongside the stable one rather than replacing it. That matters when you launch it: the desktop launcher and a bare `flatpak run com.github.IsmaelMartinez.teams_for_linux` both keep starting the stable build, so run the beta explicitly, otherwise you will think you are testing the pre-release when you are not.
-
-```bash
-flatpak run com.github.IsmaelMartinez.teams_for_linux//beta
-```
-
-To go back to stable, remove the beta branch:
-
-```bash
-flatpak uninstall com.github.IsmaelMartinez.teams_for_linux//beta
-```
-
-If the install fails with the app not being found on `flathub-beta`, there is no beta build published at the moment. The beta remote only carries a build while a pre-release is being tested, so use the stable Flathub install above and try again after the next release.
-
-:::note
-The beta remote carries pre-release builds and packaging changes that are still being validated, so expect the occasional rough edge. If you hit one, please [open an issue](https://github.com/IsmaelMartinez/teams-for-linux/issues) and mention that you are on the beta remote.
-:::
-
-## Manual Installation
-
-### Download from GitHub Releases
-
-1. Go to [GitHub Releases](https://github.com/IsmaelMartinez/teams-for-linux/releases)
-2. Download the appropriate package for your system:
-   - **AppImage** - Universal Linux package
-   - **deb** - Debian/Ubuntu package
-   - **rpm** - Red Hat/Fedora package
-   - **snap** - Universal snap package
-   - **tar.gz** - Portable archive
-
-### Package Installation
-
-#### Debian/Ubuntu (.deb)
-
-```bash
-sudo dpkg -i teams-for-linux_*.deb
-sudo apt-get install -f  # Fix dependencies if needed
-```
-
-#### Red Hat/Fedora (.rpm)
-
-```bash
-# Fedora
-sudo dnf install teams-for-linux_*.rpm
-
-# RHEL/CentOS
-sudo rpm -i teams-for-linux_*.rpm
-```
-
-#### AppImage
+### AppImage
 
 ```bash
 # Make executable
-chmod +x teams-for-linux_*.AppImage
+chmod +x outlook-for-linux-*.AppImage
 
 # Run directly
-./teams-for-linux_*.AppImage
-
-# For better desktop integration, use AppImageLauncher
+./outlook-for-linux-*.AppImage
 ```
 
-:::tip AppImage Integration
-For AppImage files, install [`AppImageLauncher`](https://github.com/TheAssassin/AppImageLauncher) for better desktop integration, including automatic menu entries and file associations.
+:::tip AppImage updates and integration
+The AppImage build includes an auto-updater that checks GitHub Releases for newer versions and asks before installing one. The deb, rpm, and tar.gz packages do not update themselves; download the new release when one is published.
+
+For desktop menu entries, use [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) or [Gear Lever](https://github.com/mijorus/gearlever).
 :::
 
-#### Portable Installation (tar.gz)
+### Portable Installation (tar.gz)
 
 ```bash
 # Extract
-tar -xzf teams-for-linux_*.tar.gz
+tar -xzf outlook-for-linux-*.tar.gz
 
 # Run
-cd teams-for-linux/
-./teams-for-linux
+cd outlook-for-linux-*/
+./outlook-for-linux
 ```
+
+## Build from Source
+
+Building from source requires Git and a current Node.js LTS release with npm.
+
+```bash
+git clone https://github.com/Taylor8484/outlook-for-linux.git
+cd outlook-for-linux
+git checkout develop-outlook
+npm ci
+
+# Run the app in development mode
+npm start
+
+# Or build Linux packages (written to dist/)
+npm run dist:linux
+```
+
+To build a single format, use `npm run dist:linux:deb`, `dist:linux:rpm`, `dist:linux:appimage`, or `dist:linux:targz`. See the [Contributing guide](development/contributing.md) for the full development workflow.
+
+:::note
+When run from source with `npm start`, Electron stores configuration in `~/.config/Electron/` rather than `~/.config/outlook-for-linux/`.
+:::
 
 ## First Launch
 
@@ -214,29 +89,32 @@ cd teams-for-linux/
 
 1. **Launch** the application:
    ```bash
-   teams-for-linux
+   outlook-for-linux
    ```
 
-2. **Sign in** with your Microsoft Teams account
+2. **Sign in** with your Microsoft work, school, or personal account. The app opens `https://outlook.office.com/mail/` by default.
 
-3. **Configure** if needed by creating `~/.config/teams-for-linux/config.json`
+3. **Configure** if needed by creating `~/.config/outlook-for-linux/config.json`
 
 ### Initial Configuration
 
-For basic usage, no configuration is required. Teams for Linux will work out of the box.
+For basic usage, no configuration is required. Outlook for Linux works out of the box.
 
 For advanced features, create a configuration file:
 
 ```bash
-mkdir -p ~/.config/teams-for-linux/
+mkdir -p ~/.config/outlook-for-linux/
 ```
 
 Example basic configuration:
 ```json
 {
-  "minimizeToTray": true,
-  "startInTray": false,
-  "enableDesktopNotifications": true
+  "window": {
+    "closeOnCross": false
+  },
+  "tray": {
+    "enabled": true
+  }
 }
 ```
 
@@ -248,20 +126,20 @@ See the [Configuration Guide](configuration.md) for all available options.
 
 ```bash
 # Standard launch
-teams-for-linux
+outlook-for-linux
 
-# Use custom config directory
-teams-for-linux --user-data-dir=/path/to/custom/profile
+# Use a custom profile directory
+outlook-for-linux --user-data-dir=/path/to/custom/profile
 ```
 
 ### Multiple Instances
 
 ```bash
 # Work profile
-teams-for-linux --user-data-dir=~/.config/teams-work --class=teams-work
+outlook-for-linux --user-data-dir=$HOME/.config/outlook-work --class=outlook-work
 
-# Personal profile  
-teams-for-linux --user-data-dir=~/.config/teams-personal --class=teams-personal
+# Personal profile
+outlook-for-linux --user-data-dir=$HOME/.config/outlook-personal --class=outlook-personal
 ```
 
 See [Multiple Instances](multiple-instances.md) for detailed setup.
@@ -270,84 +148,52 @@ See [Multiple Instances](multiple-instances.md) for detailed setup.
 
 ```bash
 # Enable debug logging
-teams-for-linux --logConfig='{"level":"debug"}'
+outlook-for-linux --logConfig='{"level":"debug"}'
 
-# Show developer tools with Electron logging
-ELECTRON_ENABLE_LOGGING=true teams-for-linux
+# Show Electron logging on the console
+ELECTRON_ENABLE_LOGGING=true outlook-for-linux
 ```
 
 ## Troubleshooting Installation
 
-### Common Issues
-
-#### Package Dependencies
+### Package Dependencies
 
 ```bash
 # Ubuntu/Debian - fix missing dependencies
 sudo apt-get install -f
 
-# Fedora - install missing packages
+# Fedora - install a missing package
 sudo dnf install missing-package-name
 ```
 
-#### Audio Not Working
+The deb and rpm packages recommend `fido2-tools`, which is only needed if you sign in with a hardware security key.
 
-```bash
-# Check PulseAudio status
-pulseaudio --check
-
-# Restart PulseAudio
-pulseaudio --kill && pulseaudio --start
-```
-
-#### Permission Issues
-
-```bash
-# Add user to audio group
-sudo usermod -a -G audio $USER
-
-# Add user to video group (for webcam)
-sudo usermod -a -G video $USER
-
-# Log out and back in for changes to take effect
-```
-
-### Repository Issues
-
-#### GPG Key Problems
-
-```bash
-# Re-import repository key
-curl -1sLf -o /tmp/teams-for-linux.asc https://repo.teamsforlinux.de/teams-for-linux.asc
-sudo rpm --import /tmp/teams-for-linux.asc  # For RPM systems
-```
-
-#### Network/Proxy Issues
+### Network/Proxy Issues
 
 ```bash
 # For corporate environments with proxies
 export https_proxy=http://proxy.company.com:8080
 ```
 
+The app also has its own `proxyServer` option; see [Certificate Management](certificate.md) for proxies that intercept TLS.
+
 ## Next Steps
 
 After installation:
 
-1. **[Configuration](configuration.md)** - Customize Teams for Linux settings
-2. **[Multiple Instances](multiple-instances.md)** - Set up work and personal profiles
-3. **[Screen Sharing](screen-sharing.md)** - Configure screen capture
-4. **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
-5. **[Uninstall Guide](uninstall.md)** - Remove Teams for Linux from your system
+1. **[Configuration](configuration.md)**: customise Outlook for Linux settings
+2. **[Multiple Instances](multiple-instances.md)**: set up work and personal profiles
+3. **[Troubleshooting](troubleshooting.md)**: common issues and solutions
+4. **[Uninstall Guide](uninstall.md)**: remove Outlook for Linux from your system
 
 ## Support
 
 - **Documentation**: [Full documentation](index.md)
-- **Issues**: [GitHub Issues](https://github.com/IsmaelMartinez/teams-for-linux/issues)
-- **Community**: [Matrix Space](https://matrix.to/#/#teams-for-linux-space:matrix.org)
-- **Discussions**: [GitHub Discussions](https://github.com/IsmaelMartinez/teams-for-linux/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Taylor8484/outlook-for-linux/issues)
+- **Releases**: [GitHub Releases](https://github.com/Taylor8484/outlook-for-linux/releases)
 
 ## Related Documentation
 
-- [Configuration Options](configuration.md) - Complete configuration reference
-- [Multiple Instances](multiple-instances.md) - Running multiple profiles
-- [Troubleshooting](troubleshooting.md) - Common issues and solutions
+- [Configuration Options](configuration.md): complete configuration reference
+- [Multiple Instances](multiple-instances.md): running multiple profiles
+- [Troubleshooting](troubleshooting.md): common issues and solutions

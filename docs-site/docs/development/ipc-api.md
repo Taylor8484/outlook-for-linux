@@ -1,6 +1,6 @@
 # IPC API Documentation
 
-This document provides an overview of Inter-Process Communication (IPC) in Teams for Linux.
+This document provides an overview of Inter-Process Communication (IPC) in Outlook for Linux.
 
 :::info Complete Channel Reference
 **For a complete list of all IPC channels**, see the [Auto-Generated IPC API Reference](ipc-api-generated.md).
@@ -10,7 +10,7 @@ The auto-generated documentation includes all IPC channels with descriptions, ty
 
 ## Overview
 
-Teams for Linux uses Electron's IPC system to communicate between the main process and renderer processes. There are two types of IPC channels:
+Outlook for Linux uses Electron's IPC system to communicate between the main process and renderer processes. There are two types of IPC channels:
 
 - **`ipcMain.handle()`** - Request/Response pattern. The renderer sends a request and waits for a response.
 - **`ipcMain.on()`** - Event pattern. Fire-and-forget notifications from renderer to main process.
@@ -19,12 +19,11 @@ Teams for Linux uses Electron's IPC system to communicate between the main proce
 
 ### Security Configuration (v2.5.2+)
 
-As a compensating control for disabled `contextIsolation` and `sandbox` features, Teams for Linux implements comprehensive IPC security:
+As a compensating control for disabled `contextIsolation` and `sandbox` features, Outlook for Linux implements comprehensive IPC security:
 
 - **Channel Allowlisting**: Only pre-approved IPC channels are permitted
 - **Payload Sanitization**: Automatic removal of dangerous properties (`__proto__`, `constructor`, etc.)
 - **Request Logging**: Blocked channels are logged for security monitoring
-- **Domain Validation**: Enhanced Teams domain validation prevents subdomain hijacking
 
 **Implementation**: `app/security/ipcValidator.js`
 
@@ -43,7 +42,7 @@ ipcRenderer.send('channel-name', data);
 
 **Example:**
 ```javascript
-ipcRenderer.send('navigate-back');
+ipcRenderer.send('notification-toast-click');
 ```
 
 ### Request/Response Pattern
@@ -114,17 +113,14 @@ npm run generate-ipc-docs
 
 IPC channels are organized by functional area:
 
-- **Core Application** - Configuration, navigation, version info
-- **Authentication** - Login and SSO workflows
-- **Notifications** - System notifications and sounds
-- **Screen Sharing** - Desktop capture and sharing
-- **Idle Monitoring** - System idle state detection
+- **Core Application** - Configuration and version info
+- **Authentication** - Login, SSO, WebAuthn and client-certificate PIN workflows
+- **Notifications** - System notifications, custom toasts and sounds
 - **Partitions & Zoom** - Zoom level management
-- **Custom Background** - Custom background images
+- **Profiles** - Multi-account profile listing, switching and management
 - **Connection Management** - Network connectivity
-- **Incoming Calls** - Call notifications
-- **Main Window** - Window and call events
-- **Menus & Tray** - Tray icon and menu updates
+- **Main Window** - Window events
+- **Menus & Tray** - Tray icon, unread badge and menu updates
 
 For the complete channel list with descriptions, see the [Auto-Generated IPC API Reference](ipc-api-generated.md).
 

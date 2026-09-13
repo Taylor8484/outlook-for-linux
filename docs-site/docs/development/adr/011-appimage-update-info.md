@@ -4,6 +4,10 @@ id: 011-appimage-update-info
 
 # ADR 011: AppImage Update Information for Third-Party Update Managers
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. Issue and PR numbers refer to the upstream repository.
+:::
+
 ## Status
 
 ⛔ Superseded
@@ -14,7 +18,7 @@ The appimagetool post-processing approach implemented by this ADR does not produ
 
 ## Context
 
-Teams for Linux distributes AppImage builds for Linux users. A feature request ([Issue #2065](https://github.com/IsmaelMartinez/teams-for-linux/issues/2065)) proposed embedding update metadata into AppImage releases to enable third-party update managers like [Gear Lever](https://github.com/mijorus/gearlever) to automatically detect and manage updates.
+teams-for-linux distributed AppImage builds for Linux users, as Outlook for Linux still does. A feature request (upstream Issue #2065) proposed embedding update metadata into AppImage releases to enable third-party update managers like [Gear Lever](https://github.com/mijorus/gearlever) to automatically detect and manage updates.
 
 **Key Constraints:**
 
@@ -48,7 +52,7 @@ Added two new steps to each Linux build job (`linux_x64`, `linux_arm64`, `linux_
 Uses the GitHub releases zsync format:
 
 ```text
-gh-releases-zsync|IsmaelMartinez|teams-for-linux|latest|teams-for-linux-*<arch>*.AppImage.zsync
+gh-releases-zsync|<owner>|<repo>|latest|<name>-*<arch>*.AppImage.zsync
 ```
 
 | Architecture | ARCH env | Pattern |
@@ -113,7 +117,7 @@ Create a separate workflow triggered after release publication.
 
 ## Related
 
-- Issue: [#2065](https://github.com/IsmaelMartinez/teams-for-linux/issues/2065)
+- Issue: upstream #2065
 - Implementation: `.github/workflows/build.yml`
 
 ## References

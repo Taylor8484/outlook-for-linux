@@ -1,66 +1,57 @@
-# Contributing to Teams for Linux
+# Contributing to Outlook for Linux
 
-Thank you for considering contributing! This guide will help you get started with development.
-
-> [!TIP]
-> New to Electron? This project is a great starting point for learning!
-
-> [!NOTE]
-> **This is a quick reference guide.** For comprehensive developer documentation including architecture, code standards, testing strategy, and detailed guidelines, see the [**Full Contributing Guide**](https://ismaelmartinez.github.io/teams-for-linux/development/contributing).
+Thanks for considering a contribution. This guide covers the basics.
 
 ## Quick Start
 
-1. **Fork** the repository
-2. **Clone** your fork and create a feature branch
-3. **Make changes** (entry point: `app/index.js`)
-4. **Test** your changes with `npm start`
-5. **Submit** a pull request to `main` branch
-
-Each `app/` subfolder contains a README explaining its purpose.
-
-## Testing Pull Requests
-
-You can test PR changes without building from source by downloading pre-built artifacts from GitHub Actions.
-
-### How to Download PR Artifacts
-
-1. **Navigate to the PR** on GitHub
-2. **Click the "Checks" tab** at the top of the PR
-3. **Select a completed workflow run** (look for green checkmarks)
-4. **Scroll down to "Artifacts" section** at the bottom of the workflow page
-5. **Download the artifact** for your platform (available for Linux, macOS, and Windows)
-
-**Note:** You need to be logged into GitHub to download artifacts. Artifacts are retained for 30 days.
-
-See the [full guide](https://ismaelmartinez.github.io/teams-for-linux/development/contributing#testing-pull-requests) for more details.
+1. **Fork** [Taylor8484/outlook-for-linux](https://github.com/Taylor8484/outlook-for-linux)
+2. **Clone** your fork and create a feature branch from `develop-outlook`
+3. **Make changes** (entry point: `app/index.js`; each `app/` subfolder has a README explaining its purpose)
+4. **Lint and test** (see below)
+5. **Open a pull request** against the `develop-outlook` branch
 
 ## Development Setup
 
-**Prerequisites:** Node.js and npm ([installation guide](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm))
+**Prerequisites:** Node.js (see `.nvmrc`) and npm.
 
 ```bash
-# Clone and setup
-git clone https://github.com/your-username/teams-for-linux.git
-cd teams-for-linux
-npm install
+git clone https://github.com/<your-username>/outlook-for-linux.git
+cd outlook-for-linux
+git checkout develop-outlook
+npm ci
 
 # Run from source
 npm start
 
-# Lint code (required before commits)
+# Lint (required before every commit)
 npm run lint
 
-# Run E2E tests
+# Unit tests
+npm run test:unit
+
+# End-to-end tests (Playwright)
 npm run test:e2e
 ```
 
-For detailed setup, building, testing, and code standards, see the [**Full Contributing Guide**](https://ismaelmartinez.github.io/teams-for-linux/development/contributing).
+## Building Packages
 
-## Additional Resources
+```bash
+npm run dist:linux:x64    # deb, rpm, tar.gz and AppImage for x64
+npm run dist:linux:snap   # snap (needs snapcraft)
+```
 
-- **[Building Guide](https://ismaelmartinez.github.io/teams-for-linux/development/contributing#building)** - Local, Docker, and Snap builds
-- **[Testing Guide](https://ismaelmartinez.github.io/teams-for-linux/development/contributing#testing)** - E2E tests with Playwright
-- **[Code Standards](https://ismaelmartinez.github.io/teams-for-linux/development/contributing#code-standards)** - Style guidelines and patterns
-- **[Pull Request Guidelines](https://ismaelmartinez.github.io/teams-for-linux/development/contributing#pull-request-guidelines)** - PR requirements and checklist
-- **[Release Process](https://ismaelmartinez.github.io/teams-for-linux/development/contributing#release-process)** - Version management and release notes
-- **[Documentation](https://ismaelmartinez.github.io/teams-for-linux/)** - Full project documentation
+Built packages are written to `dist/`.
+
+## Commit Messages
+
+Releases are managed by [release-please](https://github.com/googleapis/release-please),
+which builds the changelog from [Conventional Commits](https://www.conventionalcommits.org/).
+Please prefix commits and PR titles with a type such as `feat:`, `fix:`, `docs:`,
+`refactor:`, `ci:` or `chore:`.
+
+## Testing Pull Request Builds
+
+Each pull request builds Linux, macOS and Windows packages in GitHub Actions.
+Open the PR's **Checks** tab, select a completed workflow run, and download the
+artifact for your platform from the **Artifacts** section (you need to be signed
+in to GitHub; artifacts are kept for 30 days).

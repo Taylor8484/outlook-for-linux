@@ -1,10 +1,9 @@
-# GitHub Copilot Instructions for Teams for Linux
+# GitHub Copilot Instructions for Outlook for Linux
 
 > [!NOTE]
 > **This is a quick reference for GitHub Copilot.** For comprehensive developer documentation including architecture, code standards, testing strategy, and detailed guidelines:
 > - **Local Documentation**: See markdown files in `docs-site/docs/` directory (these are the source files)
-> - **Web Documentation**: [Teams for Linux Documentation Site](https://ismaelmartinez.github.io/teams-for-linux/) (for human reference)
-> - **Development Guide**: `docs-site/docs/development/contributing.md` ([web](https://ismaelmartinez.github.io/teams-for-linux/development/contributing))
+> - **Development Guide**: `docs-site/docs/development/contributing.md`
 > - **Claude Code Instructions**: See `CLAUDE.md` in the root directory for detailed code patterns and AI agent workflows
 > - **Markdown Standards**: `docs-site/docs/development/contributing.md` (Markdown Standards section)
 >
@@ -12,7 +11,7 @@
 
 ## Project Overview
 
-Teams for Linux is an Electron-based desktop application that wraps the Microsoft Teams web app, providing a native desktop experience for Linux users with enhanced features like custom CSS, system notifications, and deep desktop integration.
+Outlook for Linux is an Electron-based desktop application that wraps the Outlook web app, providing a native desktop experience for Linux users with enhanced features like custom CSS, system notifications, and deep desktop integration. It is a fork of [teams-for-linux](https://github.com/IsmaelMartinez/teams-for-linux).
 
 ## Quick Reference
 
@@ -30,7 +29,7 @@ npm run dist:linux    # Build Linux packages (AppImage, deb, rpm, snap)
 
 - **Entry Point**: `app/index.js` - Main Electron process (being refactored - avoid adding new code here)
 - **Configuration**: `app/appConfiguration/` - Centralized configuration management
-- **Main Window**: `app/mainAppWindow/` - BrowserWindow and Teams wrapper
+- **Main Window**: `app/mainAppWindow/` - BrowserWindow and Outlook wrapper
 - **Browser Scripts**: `app/browser/tools/` - Client-side injected scripts
 - **Documentation**: `docs-site/docs/` - Docusaurus documentation site
 
@@ -45,11 +44,12 @@ npm run dist:linux    # Build Linux packages (AppImage, deb, rpm, snap)
 ### Critical Warnings
 
 > [!IMPORTANT]
-> **TrayIconRenderer IPC Initialization** - The `trayIconRenderer` module MUST be included in the IPC initialization list in `app/browser/preload.js`. This has been accidentally removed multiple times in git history. See issue #1902 and CLAUDE.md for details.
+> **Preload IPC Initialization** - The `trayIconRenderer` and `webauthnOverride` modules MUST be included in the IPC initialization list in `app/browser/preload.js`. `trayIconRenderer` has been accidentally removed multiple times in git history. See issue #1902 and CLAUDE.md for details.
 
 ```javascript
 // REQUIRED in app/browser/preload.js
-if (module.name === "settings" || module.name === "theme" || module.name === "trayIconRenderer" || module.name === "mqttStatusMonitor") {
+const modulesRequiringIpc = new Set(["trayIconRenderer", "webauthnOverride"]);
+if (modulesRequiringIpc.has(module.name)) {
   moduleInstance.init(config, ipcRenderer);
 }
 ```
@@ -68,7 +68,7 @@ graph TD
     D --> H[Renderer Process]
     E --> I[OS Features]
 
-    G --> J[Teams Web App]
+    G --> J[Outlook Web App]
     H --> K[Browser Scripts]
     I --> L[Notifications, Tray, etc.]
 ```
@@ -98,11 +98,12 @@ graph TD
 
 - Use `ipcMain.handle` for request-response patterns
 - Use `ipcMain.on` for fire-and-forget notifications
+- Add every new channel to the allowlist in `app/security/ipcValidator.js`
 - Document all new IPC channels in `docs-site/docs/development/ipc-api.md`
 
 ### Defensive Coding
 
-- Browser scripts must be defensive - Teams DOM can change without notice
+- Browser scripts must be defensive - Outlook DOM can change without notice
 - Implement proper null checks and error handling
 - Test across different platforms when possible
 
@@ -152,10 +153,10 @@ The project uses **Docusaurus** for documentation:
 - **Troubleshooting**: `docs-site/docs/troubleshooting.md`
 - **IPC API**: `docs-site/docs/development/ipc-api.md`
 
-**Community:**
-- **Matrix Space**: [#teams-for-linux-space:matrix.org](https://matrix.to/#/#teams-for-linux-space:matrix.org)
-- **Documentation Site**: https://ismaelmartinez.github.io/teams-for-linux/ (web version for humans)
+**Project:**
+- **Repository**: https://github.com/Taylor8484/outlook-for-linux
+- **Documentation Site**: https://taylor8484.github.io/outlook-for-linux/ (web version for humans, once published)
 
 ---
 
-**Remember**: Always consider cross-platform compatibility and that the Teams web interface can change independently of this application.
+**Remember**: Always consider cross-platform compatibility and that the Outlook web interface can change independently of this application.

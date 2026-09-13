@@ -4,13 +4,17 @@ id: 025-config-option-naming-convention
 
 # ADR 025: Configuration Option Naming Convention
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. Issue and PR numbers refer to the upstream repository.
+:::
+
 ## Status
 
 ✅ Accepted (2026-08-11)
 
 ## Context
 
-The configuration organization research (started 2025-11-09, since deleted, with the Related list below pointing at its git history) audited the flat yargs-based configuration and found related options scattered across categories, negative and positive naming mixed (`disableNotifications` beside `trayIconEnabled`), inconsistent abbreviations (`customBGServiceBaseUrl` beside `isCustomBackgroundEnabled`), and no rule for when options should become a nested object. It settled a convention and a target layout, and its 2026-01-18 conclusion rejected a big-bang migration in favour of incremental evolution: new features use nested keys from day one, existing flat options migrate opportunistically as their modules are refactored. That has run for months, and several options the research tracked as deprecated have since been removed outright, making hard removal rather than long-lived aliasing the precedent (see `app/intune/README.md`). Today `app/config/options.js` declares 72 top-level options, 17 object-typed with `fields` metadata and 55 still flat, with `docs-site/static/config-schema.json` the generated source of truth.
+The configuration organization research (started 2025-11-09, since deleted, with the Related list below pointing at its git history) audited the flat yargs-based configuration and found related options scattered across categories, negative and positive naming mixed (`disableNotifications` beside `trayIconEnabled`), inconsistent abbreviations (`customBG` beside `CustomBackground` in two since-removed background options), and no rule for when options should become a nested object. It settled a convention and a target layout, and its 2026-01-18 conclusion rejected a big-bang migration in favour of incremental evolution: new features use nested keys from day one, existing flat options migrate opportunistically as their modules are refactored. That has run for months, and several options the research tracked as deprecated have since been removed outright, making hard removal rather than long-lived aliasing the precedent (see `app/intune/README.md`). At the time of this decision, the upstream `app/config/options.js` declared 72 top-level options, 17 object-typed with `fields` metadata and 55 still flat (the Outlook conversion has since removed several), with `docs-site/static/config-schema.json` the generated source of truth.
 
 ## Decision
 
@@ -18,23 +22,23 @@ The configuration organization research (started 2025-11-09, since deleted, with
 
 Rule zero: new options are always nested, and the flat top-level namespace is closed to additions. First check `docs-site/static/config-schema.json` (or `app/config/options.js`) for a namespace that already owns your feature area and add your leaf there; create a new parent only when none fits.
 
-Nest under an object when any of these hold: three or more options relate to one feature, options share a common prefix, an option only matters when a sibling gate is enabled, or they describe a single conceptual feature. Dependents always nest under their gate (`mqtt.brokerUrl` under `mqtt.enabled`).
+Nest under an object when any of these hold: three or more options relate to one feature, options share a common prefix, an option only matters when a sibling gate is enabled, or they describe a single conceptual feature. Dependents always nest under their gate (`auth.webauthn.extraOrigins` under `auth.webauthn.enabled`).
 
-Master feature gates use positive naming: the gate leaf is `enabled`, never a `disable*` name, and a gate earns its own object only when it has dependent siblings; a standalone boolean uses a positive `<feature>Enabled`-style leaf instead. Both forms ship today: `media.camera.resolution.enabled` gates its `mode`, `width` and `height` siblings, while `media.video.menuEnabled` stands alone. Escape hatches that exist purely to switch a platform behaviour off (`disableGpu`, `disableTimestampOnCopy`, `network.disableQuic`) keep negative names, since inverting them obscures the workaround. A few shipped leaves (`media.microphone.disableAutogain`, `media.preventDeviceSwitching`) carry negative names predating this ADR and are not precedent.
+Master feature gates use positive naming: the gate leaf is `enabled`, never a `disable*` name, and a gate earns its own object only when it has dependent siblings; a standalone boolean uses a positive `<feature>Enabled`-style leaf instead. For example, `auth.webauthn.enabled` gates its `debug` and `extraOrigins` siblings. Escape hatches that exist purely to switch a platform behaviour off (`disableGpu`, `disableTimestampOnCopy`, `network.disableQuic`) keep negative names, since inverting them obscures the workaround.
 
-Spell words out rather than abbreviating (`customBackground`, not `customBG`), and rely on the nesting to keep full names short (`tray.enabled` rather than `trayIconEnabled`).
+Spell words out rather than abbreviating (`clientCertificate`, not `clientCert`), and rely on the nesting to keep full names short (`tray.enabled` rather than `trayIconEnabled`).
 
 ### Resolved rename mapping
 
 The table maps every flat option to its nested target. Four renames invert a boolean, marked in the Inverted column, so tooling must negate those values rather than copy them; a blank cell means copy unchanged. For example `disableNotifications: true` becomes `notifications.enabled: false`, and defaults stay behaviour-preserving under inversion (`disableNotifications` defaults to `false`, so `notifications.enabled` defaults to `true`).
 
-[#2841](https://github.com/IsmaelMartinez/teams-for-linux/issues/2841) settled how a rename behaves once it ships: both names keep working for a long deprecation window, the flat one marked `deprecated` so it produces a single aggregated startup warning naming its replacement, and the flat declarations are removed together in **2.30.0**. Where a config file sets both, the nested name wins. The migration runs namespace by namespace and is tracked in [#2842](https://github.com/IsmaelMartinez/teams-for-linux/issues/2842); `docs-site/static/config-schema.json` is the live record of which targets have landed, so read it rather than this table to know what the app accepts today.
+upstream #2841 settled how a rename behaves once it ships: both names keep working for a long deprecation window, the flat one marked `deprecated` so it produces a single aggregated startup warning naming its replacement, and the flat declarations are removed together in **2.30.0**. Where a config file sets both, the nested name wins. The migration runs namespace by namespace and is tracked in upstream #2842; `docs-site/static/config-schema.json` is the live record of which targets have landed, so read it rather than this table to know what the app accepts today.
 
 During the window the flat name stays the one every module reads. `app/config/renames.js` holds the machine-readable table and projects a nested value onto its flat key, so no feature code is swept while both spellings are live. That projection takes its input from the config file only, which means a nested name set through a command-line flag or an environment variable is silently ignored; those keep using the flat name until removal.
 
-The table ships in batches, each announced in the release notes. The `shortcuts` and `storage` renames landed in 2.17.0; the ten remaining brand-new namespaces land with this batch. The startup warning also points at **Settings > Show Updated Config…** ([#2913](https://github.com/IsmaelMartinez/teams-for-linux/issues/2913)), which writes a copy of the config using the new names and leaves the user's own `config.json` alone, so the warning names an action rather than only a problem.
+The table ships in batches, each announced in the release notes. The `shortcuts` and `storage` renames landed in 2.17.0; the ten remaining brand-new namespaces land with this batch. The startup warning also points at **Settings > Show Updated Config…** (upstream #2913), which writes a copy of the config using the new names and leaves the user's own `config.json` alone, so the warning names an action rather than only a problem.
 
-The `notifications`, `idleDetection`, `network` and `auth` targets are shipped objects that already hold unrelated leaves; merging renamed options into them is intentional, and every leaf key below was checked against the shipped fields with no collisions.
+The `notifications`, `network` and `auth` targets are shipped objects that already hold unrelated leaves; merging renamed options into them is intentional, and every leaf key below was checked against the shipped fields with no collisions.
 
 | Flat option | Nested target | Inverted |
 |-------------|---------------|----------|
@@ -62,13 +66,6 @@ The `notifications`, `idleDetection`, `network` and `auth` targets are shipped o
 | `disableBadgeCount` | `notifications.badgeCountEnabled` | Yes |
 | `notificationMethod` | `notifications.method` | |
 | `defaultNotificationUrgency` | `notifications.urgency` | |
-| `enableIncomingCallToast` | `incomingCalls.toast` | |
-| `incomingCallCommand` | `incomingCalls.command` | |
-| `incomingCallCommandArgs` | `incomingCalls.commandArgs` | |
-| `awayOnSystemIdle` | `idleDetection.setAwayOnIdle` | |
-| `appIdleTimeout` | `idleDetection.timeout` | |
-| `appIdleTimeoutCheckInterval` | `idleDetection.checkInterval.detectIdle` | |
-| `appActiveCheckInterval` | `idleDetection.checkInterval.detectActive` | |
 | `authServerWhitelist` | `auth.serverWhitelist` | |
 | `ssoBasicAuthUser` | `auth.basic.user` | |
 | `ssoBasicAuthPasswordCommand` | `auth.basic.passwordCommand` | |
@@ -76,12 +73,7 @@ The `notifications`, `idleDetection`, `network` and `auth` targets are shipped o
 | `clientCertPassword` | `auth.clientCertificate.password` | |
 | `customCACertsFingerprints` | `auth.customCACertificateFingerprints` | |
 | `proxyServer` | `network.proxyServer` | |
-| `isCustomBackgroundEnabled` | `customBackground.enabled` | |
-| `customBGServiceBaseUrl` | `customBackground.serviceBaseUrl` | |
-| `customBGServiceConfigFetchInterval` | `customBackground.configFetchInterval` | |
 | `defaultURLHandler` | `urlHandling.defaultHandler` | |
-| `meetupJoinRegEx` | `urlHandling.meetupJoinRegEx` | |
-| `onNewWindowOpenMeetupJoinUrlInApp` | `urlHandling.openMeetupJoinInApp` | |
 | `globalShortcuts` | `shortcuts.global` | |
 | `disableGlobalShortcuts` | `shortcuts.disableWhileFocused` | |
 | `disableGpu` | `performance.disableGpu` | |
@@ -94,7 +86,7 @@ The `notifications`, `idleDetection`, `network` and `auth` targets are shipped o
 | `spellCheckerLanguages` | `platform.spellCheckerLanguages` | |
 | `disableTimestampOnCopy` | `platform.disableTimestampOnCopy` | |
 
-Notes on specific rows. `disableGlobalShortcuts` is an array of accelerators to disable while the app is focused, not a boolean, so its rename clarifies rather than inverts. `disableNotificationSoundIfNotAvailable` is not inverted either: `true` already means the sound plays only while status is Available, exactly what `onlyWhenAvailable: true` means. The `idleDetection.checkInterval` leaves are named for what each poll detects: `app/browser/notifications/activityManager.js` uses `appIdleTimeoutCheckInterval` while active (watching for idle onset) and `appActiveCheckInterval` while idle (watching for the return to activity); plain `.idle` and `.active` would plausibly be wired backwards, and `app/idle/README.md` documented the pair backwards until corrected alongside this ADR. `awayOnSystemIdle` targets `idleDetection.setAwayOnIdle` rather than an `enabled` gate because `idleDetection` ships as an always-on object with no master switch.
+Notes on specific rows. `disableGlobalShortcuts` is an array of accelerators to disable while the app is focused, not a boolean, so its rename clarifies rather than inverts. `disableNotificationSoundIfNotAvailable` is not inverted either: `true` already means the sound plays only while status is Available, exactly what `onlyWhenAvailable: true` means.
 
 `disableBadgeCount` and `minimizeOnClose` had no target in the research mapping and are decided here as `notifications.badgeCountEnabled` (inverted, suffixed because a plain `badgeCount` boolean reads as a number) and `window.minimizeOnClose`. `minimizeOnClose` overlaps semantically with `closeAppOnCross`, both changing what the close cross does, and is ignored when `closeAppOnCross` is true; that is an observation only, and collapsing them is out of scope. `storage.clearData` corresponds to Electron's session `clearStorageData` API, the namespace supplying the word storage the leaf would otherwise stutter.
 
@@ -104,17 +96,17 @@ On the `auth` rows, `authServerWhitelist` lands at `auth.serverWhitelist` outsid
 
 ### Re-parenting shipped nested objects
 
-The research mapping also re-parented three already-nested objects: `cacheManagement` to `storage.cacheManagement`, `logConfig` to `development.logConfig`, `msTeamsProtocols` to `urlHandling.msTeamsProtocols`. Rejected: these are already discoverable, correctly grouped objects, and re-parenting a working namespace breaks every existing user config for zero gain, which is pure churn. The `storage` and `development` namespaces therefore start smaller than envisioned (`storage` initially holds only `clearData`), acceptably so.
+The research mapping also re-parented already-nested objects such as `cacheManagement` to `storage.cacheManagement` and `logConfig` to `development.logConfig`. Rejected: these are already discoverable, correctly grouped objects, and re-parenting a working namespace breaks every existing user config for zero gain, which is pure churn. The `storage` and `development` namespaces therefore start smaller than envisioned (`storage` initially holds only `clearData`), acceptably so.
 
 ### Runtime aliasing of old names
 
-An alias layer keeping flat names working forever was rejected by the original research and stays rejected; the precedent is hard removal after a deprecation window, as with `ssoInTuneEnabled` and its siblings (`app/intune/README.md`). That rejection is about a permanent layer. Whether a time-boxed fallback reads the old key for one deprecation window was the separate question, and [#2841](https://github.com/IsmaelMartinez/teams-for-linux/issues/2841) answered it yes: both names apply until removal in 2.30.0, after which the flat declarations and the projection layer are deleted together.
+An alias layer keeping flat names working forever was rejected by the original research and stays rejected; the precedent is hard removal after a deprecation window, as with `ssoInTuneEnabled` and its siblings (`app/intune/README.md`). That rejection is about a permanent layer. Whether a time-boxed fallback reads the old key for one deprecation window was the separate question, and upstream #2841 answered it yes: both names apply until removal in 2.30.0, after which the flat declarations and the projection layer are deleted together.
 
 ## Consequences
 
 ### Positive
 
-Contributors get one canonical answer for naming a new option and for where an existing flat option will land, without reading a 1600-line research document. The mapping is stable enough for tooling to consume, and [#2841](https://github.com/IsmaelMartinez/teams-for-linux/issues/2841) chose the mechanism: yargs' own `deprecated` field, which `checkUsedDeprecatedValues` in `app/config/index.js` reads on every startup for any deprecated key present in the config file, system-wide or user. That only warns, since it neither maps an old name to its successor nor handles the four inversions, so `app/config/renames.js` supplies both.
+Contributors get one canonical answer for naming a new option and for where an existing flat option will land, without reading a 1600-line research document. The mapping is stable enough for tooling to consume, and upstream #2841 chose the mechanism: yargs' own `deprecated` field, which `checkUsedDeprecatedValues` in `app/config/index.js` reads on every startup for any deprecated key present in the config file, system-wide or user. That only warns, since it neither maps an old name to its successor nor handles the four inversions, so `app/config/renames.js` supplies both.
 
 ### Negative
 
@@ -124,13 +116,13 @@ Migration is not full equivalence. A flat option declares a type and yargs coerc
 
 ### Neutral
 
-A permanent alias layer stays rejected. The codemod no longer does: `toNestedConfigFile` in `app/config/renames.js` rewrites a config file onto the nested names, and the surface that offers it to users shipped in v2.19.0 as the Settings menu's "Show Updated Config…" entry ([#2913](https://github.com/IsmaelMartinez/teams-for-linux/issues/2913)). Renames proceed namespace by namespace as tracked in [#2842](https://github.com/IsmaelMartinez/teams-for-linux/issues/2842), and the four occupied namespaces will mix long-shipped and newly-arrived leaves. Those four go last: yargs replaces an object option wholesale rather than deep merging it, so until that is fixed a user moving one leaf into an existing namespace would lose the declared defaults of its siblings.
+A permanent alias layer stays rejected. The codemod no longer does: `toNestedConfigFile` in `app/config/renames.js` rewrites a config file onto the nested names, and the surface that offers it to users shipped in v2.19.0 as the Settings menu's "Show Updated Config…" entry (upstream #2913). Renames proceed namespace by namespace as tracked in upstream #2842, and the three occupied namespaces will mix long-shipped and newly-arrived leaves. Those three go last: yargs replaces an object option wholesale rather than deep merging it, so until that is fixed a user moving one leaf into an existing namespace would lose the declared defaults of its siblings.
 
 ## Related
 
 - [ADR-024](024-smartcard-pkcs11-pin-dialog.md): shipped the `auth.clientCertificate` namespace this ADR aligns with
-- Roadmap: [Config Schema as Single Source of Truth](../plan/roadmap.md) (#2597), where the in-app settings window is tracked
-- [#2841](https://github.com/IsmaelMartinez/teams-for-linux/issues/2841), the settled deprecation window decision, and [#2842](https://github.com/IsmaelMartinez/teams-for-linux/issues/2842), which tracks the migration itself
+- Upstream #2597 (Config Schema as Single Source of Truth), where the in-app settings window is tracked
+- upstream #2841, the settled deprecation window decision, and upstream #2842, which tracks the migration itself
 - [ADR-029](029-config-schema-single-source-of-truth.md): the one-schema-three-consumers decision that builds on this convention
 - `app/config/options.js` and `docs-site/static/config-schema.json`, the live inventory
 - Research history: see git history for `docs-site/docs/development/research/configuration-organization-research.md`

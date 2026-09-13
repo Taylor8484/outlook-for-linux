@@ -1,4 +1,4 @@
-# Contributing to Teams for Linux
+# Contributing to Outlook for Linux
 
 Thank you for considering contributing! This guide will help you get started with development.
 
@@ -8,29 +8,24 @@ This project is a great starting point for learning Electron development!
 
 ## Quick Start
 
-1. **Fork** the repository
-2. **Clone** your fork and create a feature branch
+1. **Fork** [Taylor8484/outlook-for-linux](https://github.com/Taylor8484/outlook-for-linux)
+2. **Clone** your fork and create a feature branch from `develop-outlook`
 3. **Make changes** (see architecture below)
-4. **Test** your changes with `npm start`
-5. **Submit** a pull request to `main` branch
+4. **Test** your changes with `npm start`, `npm run lint` and `npm run test:unit`
+5. **Submit** a pull request against the `develop-outlook` branch
 
 Each `app/` subfolder contains a README explaining its purpose.
 
 ## Testing Pull Requests
 
-You can test PR changes without building from source by downloading pre-built artifacts from GitHub Actions.
+You can test PR changes without building from source by downloading pre-built artifacts from GitHub Actions:
 
-### How to Download PR Artifacts
-
-A bot automatically posts a comment on each PR with direct download links to all build artifacts.
-
-Alternatively:
 1. Go to the PR's "Checks" tab
 2. Select a workflow run
 3. Scroll to "Artifacts" section and download
 
 :::info
-Artifacts require GitHub login and are retained for 30 days.
+Artifacts require GitHub login and are retained for a limited time.
 :::
 
 ## Development Setup
@@ -44,17 +39,25 @@ Artifacts require GitHub login and are retained for 30 days.
 
 ```bash
 # Clone your fork
-git clone https://github.com/your-username/teams-for-linux.git
-cd teams-for-linux
+git clone https://github.com/your-username/outlook-for-linux.git
+cd outlook-for-linux
 
-# Install dependencies
-npm install
+# Track the upstream repository and branch from develop-outlook
+git remote add upstream https://github.com/Taylor8484/outlook-for-linux.git
+git fetch upstream
+git checkout -b feat/my-change upstream/develop-outlook
 
-# Run from source
+# Install dependencies (exact versions from package-lock.json)
+npm ci
+
+# Run from source (the prestart hook runs npm ci again)
 npm start
 
 # Lint code (required before commits)
 npm run lint
+
+# Run unit tests
+npm run test:unit
 ```
 
 :::warning Code Quality
@@ -66,8 +69,11 @@ Always run `npm run lint` before committing. Pull requests with linting errors w
 ### Local Linux Build
 
 ```bash
-# Create all Linux packages (deb, rpm, snap, AppImage, tar.gz)
+# Create all Linux packages
 npm run dist:linux
+
+# Or build the release formats for one architecture (tar.gz, deb, rpm, AppImage)
+npm run dist:linux:x64
 
 # Development build without packaging
 npm run pack
@@ -79,14 +85,7 @@ For consistent builds across environments:
 
 ```bash
 podman run -it --rm --volume .:/var/mnt:z -w /var/mnt/ node:20 /bin/bash -c \
-  "apt update && apt install -y rpm && npm ci && npm run dist:linux"
-```
-
-### Snap-specific Build
-
-```bash
-npm run dist:linux:snap
-cd dist && sudo snap install teams-for-linux_*.snap --dangerous
+  "apt update && apt install -y rpm && npm ci && npm run dist:linux:x64"
 ```
 
 ## Architecture Overview
@@ -97,29 +96,29 @@ graph TD
     A --> C[Window Management]
     A --> D[IPC Handlers]
     A --> E[System Integration]
-    
+
     B --> F[config.json Files]
     C --> G[Browser Window]
     D --> H[Renderer Process]
     E --> I[OS Features]
-    
-    G --> J[Teams Web App]
+
+    G --> J[Outlook Web App]
     H --> K[Browser Scripts]
     I --> L[Notifications, Tray, etc.]
 ```
 
 ### Key Components
 
-- **Main Process** (`app/index.js`) - Application entry point (being refactored)
+- **Main Process** (`app/index.js`) - Application entry point
 - **Startup** (`app/startup/`) - Command line switches and initialization
-- **Configuration** (`app/appConfiguration/`) - Settings management
-- **IPC System** (`app/` + browser scripts) - Process communication
-- **Browser Integration** (`app/browser/`) - Teams web app enhancements
-- **System Features** (notifications, tray, screen sharing)
+- **Configuration** (`app/config/`, `app/appConfiguration/`) - Settings schema and management
+- **IPC System** (`app/` + browser scripts) - Process communication, validated by `app/security/`
+- **Browser Integration** (`app/browser/`) - Preload and browser tools running inside the Outlook web app
+- **System Features** (notifications, tray and unread badge, global shortcuts, downloads, auto-update)
 
 ## Code Standards
 
-### Style Guidelines (some WIP)
+### Style Guidelines
 
 - **ES6+ JavaScript** - Use modern JavaScript features
 - **No `var`** - Use `const` by default, `let` for reassignment
@@ -132,11 +131,11 @@ graph TD
 ```javascript
 class ExampleModule {
   #privateField = 'value';
-  
+
   constructor(config) {
     this.config = config;
   }
-  
+
   async performAction() {
     try {
       const result = await this.#processData();
@@ -146,7 +145,7 @@ class ExampleModule {
       throw error;
     }
   }
-  
+
   #processData() {
     // Private method implementation
     return Promise.resolve(this.#privateField);
@@ -203,7 +202,7 @@ myFeature: {
 
 ### 2. (Optional) Share the default with other modules
 
-If the default needs to be read outside the config system — for example by a module or a unit test that should not initialise the full config — add it to `app/config/defaults.js` and reference it from `options.js`, the way `meetupJoinRegEx` already does.
+If the default needs to be read outside the config system — for example by a module or a unit test that should not initialise the full config — add it to `app/config/defaults.js` and reference it from `options.js`.
 
 ### 3. Read the option
 
@@ -223,6 +222,7 @@ The same schema also drives warn-only validation of the user's `config.json` at 
 
 ```bash
 npm run lint
+npm run test:unit
 npm run test:e2e
 ```
 
@@ -230,7 +230,7 @@ npm run test:e2e
 
 ### Contributing to Documentation
 
-The documentation is built with Docusaurus and automatically deployed to GitHub Pages.
+The documentation is built with Docusaurus and deployed to GitHub Pages at [taylor8484.github.io/outlook-for-linux](https://taylor8484.github.io/outlook-for-linux/).
 
 #### Local Documentation Development
 
@@ -239,7 +239,7 @@ The documentation is built with Docusaurus and automatically deployed to GitHub 
 cd docs-site
 
 # Install dependencies
-npm install
+npm ci
 
 # Start development server
 npm run start
@@ -252,7 +252,7 @@ npm run build
 
 1. Create `.md` or `.mdx` files in `docs-site/docs/`
 2. Update `docs-site/sidebars.ts` to include new pages
-3. Test locally with `npm run start`
+3. Test locally with `npm run start`, then confirm `npm run build` passes (broken links fail the build)
 4. Commit and push changes
 
 #### Documentation Standards
@@ -322,9 +322,17 @@ When updating standards, update this section only. All other files should refere
 
 ## Testing
 
+### Unit Tests
+
+Unit tests use Node's built-in test runner and live in `tests/unit/`:
+
+```bash
+npm run test:unit
+```
+
 ### End-to-End (E2E) Tests
 
-Teams for Linux uses Playwright for automated end-to-end testing. These tests ensure the application launches correctly and validates core functionality.
+Outlook for Linux uses Playwright for automated end-to-end testing. These tests ensure the application launches correctly and validates core functionality.
 
 #### Running E2E Tests
 
@@ -350,6 +358,7 @@ Current E2E test coverage includes:
 - **Application Launch**: Verifies the app starts successfully
 - **Window Creation**: Ensures main window is created
 - **Microsoft Login Redirect**: Validates initial redirect to Microsoft authentication
+- **Feature gates**: Multi-account enabled/disabled, notifications, preload modules and WebAuthn wiring
 
 #### Writing New E2E Tests
 
@@ -370,7 +379,7 @@ test('your feature test', async () => {
 
   try {
     // Create clean state
-    userDataDir = mkdtempSync(join(tmpdir(), 'teams-e2e-'));
+    userDataDir = mkdtempSync(join(tmpdir(), 'outlook-e2e-'));
 
     electronApp = await electron.launch({
       args: ['./app/index.js'],
@@ -406,7 +415,7 @@ For detailed information about the testing strategy and architecture decisions, 
 # Run application in development mode
 npm start
 
-# Test specific features
+# Test with a throwaway profile
 npm start -- --user-data-dir=/tmp/test-profile
 ```
 
@@ -415,34 +424,37 @@ npm start -- --user-data-dir=/tmp/test-profile
 ```bash
 # Test production build
 npm run pack
-./dist/linux-unpacked/teams-for-linux
+./dist/linux-unpacked/outlook-for-linux
 
 # Test package installation
-sudo dpkg -i dist/teams-for-linux_*.deb
-teams-for-linux
+sudo dpkg -i dist/outlook-for-linux_*.deb
+outlook-for-linux
 ```
 
 ## Pull Request Guidelines
 
 ### Before Submitting
 
+- [ ] Branch is based on the latest `develop-outlook`
 - [ ] Code follows style guidelines
 - [ ] `npm run lint` passes without errors
 - [ ] `npm run test:unit` passes (unit tests)
 - [ ] `npm run test:e2e` passes locally, or let CI run it (E2E tests)
 - [ ] Manual testing completed
 - [ ] Documentation updated if needed
-- [ ] Commit messages are descriptive
+- [ ] Commit messages follow Conventional Commits
 
 ### PR Requirements
 
-1. **Target branch**: Always target `main` branch
+1. **Target branch**: Always target `develop-outlook`
 2. **Description**: Clearly describe changes and motivation
 3. **Testing**: Include testing instructions
 4. **Screenshots**: For UI changes, include before/after screenshots
 5. **Breaking changes**: Clearly mark and document
 
 ### Commit Message Format
+
+The project uses [Conventional Commits](https://www.conventionalcommits.org/); the prefix drives the release version bump.
 
 ```
 type(scope): description
@@ -459,20 +471,13 @@ Examples:
 
 ## Release Process
 
-Releases are managed by [release-please](https://github.com/googleapis/release-please), which automatically maintains a Release PR from conventional commits:
+Releases are managed by [release-please](https://github.com/googleapis/release-please), which automatically maintains a Release PR from conventional commits on `develop-outlook`:
 
 1. **Merge PRs with conventional commit messages** — `feat:`, `fix:`, `chore:`, etc.
 2. **release-please creates/updates a Release PR** — Includes version bump, `CHANGELOG.md`, and `appdata.xml`
 3. **Merge the Release PR when ready** — This triggers the build
-4. **Build triggers automatically** — On version change in main
-5. **Promote GitHub draft → full release** - Triggers Snap candidate channel and Flatpak
-6. **Promote Snap candidate → stable** - Manual step after testing
-
-:::note Snap Channel Strategy
-- Pushes to main publish snaps to **edge** with a commit SHA suffix (e.g., `2.7.5-edge.g1a2b3c4`)
-- Publishing a GitHub Release automatically builds and publishes to the **candidate** channel
-- Promotion from candidate to **stable** is manual
-:::
+4. **Build produces a draft GitHub Release** — deb, rpm, AppImage and tar.gz artifacts
+5. **Promote the draft to a full release** — AppImage users then receive the update in-app
 
 See [Manual Release Process](manual-release-process.md) for detailed instructions.
 
@@ -481,14 +486,12 @@ See [Manual Release Process](manual-release-process.md) for detailed instruction
 ### Development Questions
 
 - **[IPC API Documentation](ipc-api.md)** - Inter-process communication reference
-- **[Configuration Guide](configuration.md)** - Understanding the config system
+- **[Configuration Guide](../configuration.md)** - Understanding the config system
 - **[Architecture Overview](#architecture-overview)** - Main and renderer process layout, key components
 
 ### Community Support
 
-- **Matrix Space**: [#teams-for-linux-space:matrix.org](https://matrix.to/#/#teams-for-linux-space:matrix.org)
-- **GitHub Discussions**: [Project discussions](https://github.com/IsmaelMartinez/teams-for-linux/discussions)
-- **GitHub Issues**: [Bug reports and feature requests](https://github.com/IsmaelMartinez/teams-for-linux/issues)
+- **GitHub Issues**: [Bug reports and feature requests](https://github.com/Taylor8484/outlook-for-linux/issues)
 
 ## Code of Conduct
 
@@ -496,11 +499,11 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 
 ## License
 
-By contributing to Teams for Linux, you agree that your contributions will be licensed under the GPL-3.0 license.
+By contributing to Outlook for Linux, you agree that your contributions will be licensed under the GPL-3.0 license.
 
 ## Related Documentation
 
-- [Configuration Options](configuration.md) - Application configuration reference
+- [Configuration Options](../configuration.md) - Application configuration reference
 - [IPC API](ipc-api.md) - Developer integration documentation
 - [Manual Release Process](manual-release-process.md) - Release workflow using release-please
 - [Release Info Generation](release-info.md) - Technical details of release info script

@@ -4,13 +4,17 @@ id: 023-release-automation-tooling
 
 # ADR 023: Release Automation Tooling
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. Issue and PR numbers refer to the upstream repository.
+:::
+
 ## Status
 
 ✅ Implemented
 
 ## Context
 
-Teams for Linux releases used to be a manual sequence: bump the version in `package.json`, draft a changelog from staged `.changelog/pr-XXX.txt` files, run `npm run release:prepare` locally, update `appdata.xml` by hand for the Linux software centres, tag, and create the GitHub Release. That is six or seven steps that a solo maintainer has to remember and perform in order, every time, with no safety net if a step is skipped or done out of sequence.
+teams-for-linux releases, and so the pipeline Outlook for Linux inherited, used to be a manual sequence: bump the version in `package.json`, draft a changelog from staged `.changelog/pr-XXX.txt` files, run `npm run release:prepare` locally, update `appdata.xml` by hand for the Linux software centres, tag, and create the GitHub Release. That is six or seven steps that a solo maintainer has to remember and perform in order, every time, with no safety net if a step is skipped or done out of sequence.
 
 A survey of project management and release automation tooling (see § References) evaluated the options available to a solo-maintainer open source project that already enforces conventional-commit discipline. The evaluation criterion was whether a tool reduces real, felt pain without adding more overhead than it removes. The survey covered release automation (release-please, release-it, semantic-release, changesets), AI agent memory (Beads), and issue tracking boards (GitHub Projects v2, ZenHub, Linear, Plane). It concluded that release automation was the single highest-leverage area, and that the other categories either solved problems this project does not have or had not yet reached their adoption trigger.
 
@@ -18,17 +22,17 @@ The survey document still carries the line "Status: Research complete. No implem
 
 ## Decision
 
-Adopt release-please as the project's release automation mechanism, driven by conventional commits and gated on the maintainer merging an auto-generated Release PR. The custom changelog staging approach it replaced (per-PR `.changelog/*.txt` files with AI-generated summaries, recorded in ADR 005) has been removed.
+Adopt release-please as the project's release automation mechanism, driven by conventional commits and gated on the maintainer merging an auto-generated Release PR. The custom changelog staging approach it replaced (per-PR `.changelog/*.txt` files with AI-generated summaries, recorded in an upstream ADR that was not carried over) has been removed.
 
 ### Architecture
 
-The mechanism lives in `.github/workflows/release-please.yml` and fires on every push to `main`. The workflow runs `googleapis/release-please-action` v5 (pinned by commit SHA) against `release-please-config.json` and `.release-please-manifest.json`, the latter of which tracks the current version as the single source of truth.
+The mechanism lives in `.github/workflows/release-please.yml` and fires on every push to the default branch (`develop-outlook` in Outlook for Linux). The workflow runs `googleapis/release-please-action` v5 (pinned by commit SHA) against `release-please-config.json` and `.release-please-manifest.json`, the latter of which tracks the current version as the single source of truth.
 
-On each run, release-please reads the conventional commits that have landed since the last release and opens or updates a single Release PR titled `chore(main): release X.Y.Z`. That PR carries the semantic version bump in `package.json` and a `CHANGELOG.md` regenerated from the commit subjects, categorised into the ten sections declared in `release-please-config.json` (Features from `feat:`, Bug Fixes from `fix:`, then Performance, Security, Dependencies, Code Improvements, Documentation, CI/CD, Testing and Maintenance). The bump type follows the commit prefix: `feat:` bumps the minor digit, `fix:` bumps the patch digit, and `feat!:` or a `BREAKING CHANGE:` footer bumps the major digit.
+On each run, release-please reads the conventional commits that have landed since the last release and opens or updates a single Release PR titled `chore(<branch>): release X.Y.Z`. That PR carries the semantic version bump in `package.json` and a `CHANGELOG.md` regenerated from the commit subjects, categorised into the ten sections declared in `release-please-config.json` (Features from `feat:`, Bug Fixes from `fix:`, then Performance, Security, Dependencies, Code Improvements, Documentation, CI/CD, Testing and Maintenance). The bump type follows the commit prefix: `feat:` bumps the minor digit, `fix:` bumps the patch digit, and `feat!:` or a `BREAKING CHANGE:` footer bumps the major digit.
 
-Three supplementary steps in the same workflow run whenever a Release PR exists, checking out the PR head branch and pushing follow-up commits to it. `scripts/update-appdata-xml.js` inserts a new `<release>` entry into `com.github.IsmaelMartinez.teams_for_linux.appdata.xml` from the new version and the fresh changelog entries, which closes the one gap release-please does not cover natively and keeps Flatpak and AppStream metadata in sync. `npm install --package-lock-only --ignore-scripts` refreshes `package-lock.json` to match the bumped version. `scripts/append-contributors.mjs` appends contributor credits to both the changelog and the PR body.
+Three supplementary steps in the same workflow run whenever a Release PR exists, checking out the PR head branch and pushing follow-up commits to it. `scripts/update-appdata-xml.js` inserts a new `<release>` entry into `io.github.taylor8484.outlook_for_linux.appdata.xml` from the new version and the fresh changelog entries, which closes the one gap release-please does not cover natively and keeps the AppStream metadata in sync. `npm install --package-lock-only --ignore-scripts` refreshes `package-lock.json` to match the bumped version. `scripts/append-contributors.mjs` appends contributor credits to both the changelog and the PR body.
 
-Merging the Release PR is the release trigger and the only manual action required. On merge, release-please tags the commit and creates the GitHub Release, which `release-please-config.json` sets to `"draft": true`, and the build workflow produces the artefacts. Because a draft release 404s for anyone without write access and has no Git tag until it is published, a further workflow step edits release-please's own "Created releases" bot comment to annotate it with a draft-status warning. The maintainer then promotes the draft to a full release, which in turn triggers Flatpak and publishes the Snap candidate channel, leaving the candidate to stable promotion as a deliberate manual step.
+Merging the Release PR is the release trigger and the only manual action required. On merge, release-please tags the commit and creates the GitHub Release, which `release-please-config.json` sets to `"draft": true`, and the build workflow produces the artefacts. Because a draft release 404s for anyone without write access and has no Git tag until it is published, a further workflow step edits release-please's own "Created releases" bot comment to annotate it with a draft-status warning. The maintainer then promotes the draft to a full release.
 
 ### Rationale
 
@@ -36,7 +40,7 @@ The Release PR model is what made release-please the right fit rather than merel
 
 Contributors needed no behaviour change at all. The project already required conventional commits, so release-please had a well-formed commit history to work from on day one.
 
-The one real gap, `appdata.xml`, was known in advance and was closed exactly as the research anticipated, with a small supplementary Action step rather than a fork or a plugin. Everything else in the pipeline (build, artefact publishing, Snap and Flatpak promotion) was left untouched, so adopting release-please did not require rearchitecting the release infrastructure around it.
+The one real gap, `appdata.xml`, was known in advance and was closed exactly as the research anticipated, with a small supplementary Action step rather than a fork or a plugin. Everything else in the pipeline (build and artefact publishing) was left untouched, so adopting release-please did not require rearchitecting the release infrastructure around it.
 
 ## Alternatives Considered
 
@@ -68,9 +72,9 @@ Rejected: this is a single-package repository, so changesets is not relevant her
 
 ### Positive
 
-The release is now a single action. The maintainer reviews an always-current Release PR and merges it, and the version bump, changelog, `appdata.xml` entry, lock file refresh, contributor credits, tag and GitHub Release all follow automatically. Six or seven manual steps collapsed into one, and the steps that remain (promoting the draft release, promoting Snap candidate to stable) are the ones that genuinely need human judgement.
+The release is now a single action. The maintainer reviews an always-current Release PR and merges it, and the version bump, changelog, `appdata.xml` entry, lock file refresh, contributor credits, tag and GitHub Release all follow automatically. Six or seven manual steps collapsed into one, and the step that remains (promoting the draft release) is the one that genuinely needs human judgement.
 
-The changelog is derived directly from commit messages, so it is always consistent with what actually shipped and always up to date, refreshing on every new commit to main rather than being assembled at release time. Contributors needed zero behaviour change because conventional commits were already required.
+The changelog is derived directly from commit messages, so it is always consistent with what actually shipped and always up to date, refreshing on every new commit to the default branch rather than being assembled at release time. Contributors needed zero behaviour change because conventional commits were already required.
 
 Removing the bespoke pipeline deleted a meaningful amount of maintained code: `prepare-release.yml`, `changelog-generator.yml`, `release-prepare.mjs`, `generateReleaseNotes.mjs`, and the `.changelog/*.txt` staging convention. Standard, widely adopted tooling now carries that weight instead.
 
@@ -95,5 +99,5 @@ The project has taken on custom glue in the release-please workflow: three suppl
 - Release process documentation: `docs-site/docs/development/manual-release-process.md`
 - [release-please upstream](https://github.com/googleapis/release-please)
 - [Conventional Commits specification](https://www.conventionalcommits.org/)
-- Superseded ADR: [ADR 005: AI-Powered Changelog Generation](./005-ai-powered-changelog-generation.md), the per-PR changelog staging approach that release-please replaced
+- Superseded upstream ADR 005 (AI-Powered Changelog Generation, not carried over), the per-PR changelog staging approach that release-please replaced
 - Research history: see git history for `docs-site/docs/development/research/project-management-tools-research.md`

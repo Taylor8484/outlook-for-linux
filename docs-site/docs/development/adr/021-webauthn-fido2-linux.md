@@ -4,19 +4,23 @@ id: 021-webauthn-fido2-linux
 
 # ADR 021: WebAuthn / FIDO2 Hardware Security Keys on Linux
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. Issue and PR numbers refer to the upstream repository.
+:::
+
 ## Status
 
 ✅ Implemented (opt-in beta behind `auth.webauthn.enabled`)
 
-Shipped in [PR #2357](https://github.com/IsmaelMartinez/teams-for-linux/pull/2357) (v2.10.0); [#2944](https://github.com/IsmaelMartinez/teams-for-linux/issues/2944) requests enabling it by default on Linux, and [#2714](https://github.com/IsmaelMartinez/teams-for-linux/issues/2714) (phone and QR passkey sign-in via hybrid transport) is blocked upstream.
+Shipped in upstream PR #2357 (v2.10.0); upstream #2944 requests enabling it by default on Linux, and upstream #2714 (phone and QR passkey sign-in via hybrid transport) is blocked upstream.
 
 ## Context
 
-Hardware security keys (YubiKey, SoloKeys, Nitrokey, Feitian, etc.) have been unusable on `teams-for-linux` for years, tracked in the long-running umbrella issue [#802](https://github.com/IsmaelMartinez/teams-for-linux/issues/802) and a steady stream of duplicates (#1407, #1546, #1338, #1824, #2011, #2038, #1875, #2152, #2332, #2409).
+Hardware security keys (YubiKey, SoloKeys, Nitrokey, Feitian, etc.) had been unusable on teams-for-linux for years, tracked in the long-running umbrella issue upstream #802 and a steady stream of duplicates (#1407, #1546, #1338, #1824, #2011, #2038, #1875, #2152, #2332, #2409).
 
 The root cause is upstream: Electron/Chromium on Linux does not ship a native FIDO2 authenticator backend. The WebAuthn JavaScript API surface (`navigator.credentials.create` / `.get`) is present in the renderer and the ceremony starts, but there is no OS-level platform authenticator implementation to complete it against a USB key. The tracking ticket is [electron/electron#24573](https://github.com/electron/electron/issues/24573), which remains open with no Linux implementation. macOS and Windows are unaffected because Chromium on those platforms delegates to the OS WebAuthn stack.
 
-A previous attempt to ship a fix ([PR #2353](https://github.com/IsmaelMartinez/teams-for-linux/pull/2353)) was reverted by [PR #2356](https://github.com/IsmaelMartinez/teams-for-linux/pull/2356) after merge, because it had not been validated against real hardware with a real Microsoft tenant. Community testers (@rafajunio, @machadofelipe, @marcovr, @rlavriv) then iterated on a replacement ([PR #2357](https://github.com/IsmaelMartinez/teams-for-linux/pull/2357)) which has been end-to-end validated on YubiKey + Arch Linux + Microsoft 365 with `fido2-tools` 1.16.0.
+A previous attempt to ship a fix (upstream PR #2353) was reverted by upstream PR #2356 after merge, because it had not been validated against real hardware with a real Microsoft tenant. Community testers (@rafajunio, @machadofelipe, @marcovr, @rlavriv) then iterated on a replacement (upstream PR #2357) which has been end-to-end validated on YubiKey + Arch Linux + Microsoft 365 with `fido2-tools` 1.16.0.
 
 ## Decision
 
@@ -28,7 +32,7 @@ Layer 1 lives in the preload script at `app/browser/tools/webauthnOverride.js` a
 
 Layer 2 lives in the main process at `app/webauthn/index.js` and addresses the subframe case: Microsoft's login flow may trigger the WebAuthn ceremony from a child frame where the preload does not run. For subframes whose origin matches the Microsoft login allowlist, the main process injects a sibling override via `webFrameMain.executeJavaScript()`. The injected script relays requests to the parent frame using `window.parent.postMessage` with an origin-gated listener in the parent preload.
 
-The main-process handler at `app/webauthn/handleWebauthnRequest()` validates the request origin against the allowlist (`login.microsoftonline.com`, `login.microsoft.com`, `login.live.com`), collects the PIN if `userVerification === "required"` (via a `contextIsolation: true` BrowserWindow so the PIN never enters page JS context), and delegates to `app/webauthn/fido2Backend.js` to spawn `fido2-cred` / `fido2-assert`. PIN is written to the child's stdin only after the stderr `Enter PIN for` prompt is detected, avoiding a race with libfido2's readpassphrase fallback logic. `auth.webauthn.extraOrigins` ([#2945](https://github.com/IsmaelMartinez/teams-for-linux/pull/2945), v2.20.0) unions extra login origins into this allowlist via `app/webauthn/originAllowlist.js`, so third-party IdPs and GovCloud login hosts can be added without a code change.
+The main-process handler at `app/webauthn/handleWebauthnRequest()` validates the request origin against the allowlist (`login.microsoftonline.com`, `login.microsoft.com`, `login.live.com`), collects the PIN if `userVerification === "required"` (via a `contextIsolation: true` BrowserWindow so the PIN never enters page JS context), and delegates to `app/webauthn/fido2Backend.js` to spawn `fido2-cred` / `fido2-assert`. PIN is written to the child's stdin only after the stderr `Enter PIN for` prompt is detected, avoiding a race with libfido2's readpassphrase fallback logic. `auth.webauthn.extraOrigins` (upstream #2945, v2.20.0) unions extra login origins into this allowlist via `app/webauthn/originAllowlist.js`, so third-party IdPs and GovCloud login hosts can be added without a code change.
 
 ### Rationale
 
@@ -42,11 +46,11 @@ Ferdium shipped a conceptually identical approach via `electron-webauthn-linux` 
 
 ### Addendum (2026-09): touch prompt
 
-Issue #2631 asked for a "touch your security key now" prompt during the user-presence wait, since the PIN dialog closes and nothing else appears on screen while `fido2-assert` / `fido2-cred` block. [PR #2779](https://github.com/IsmaelMartinez/teams-for-linux/pull/2779) added `app/webauthn/touchPrompt.js`, a window shown around the security-key call and dismissed in a `finally` once the call settles, whichever way it resolves. Cancel is wired through an `AbortSignal` that `spawnFido2` reuses for the same detached-process-group kill the 60s timeout already used, so cancelling cannot leave a `fido2` child holding the device.
+Issue #2631 asked for a "touch your security key now" prompt during the user-presence wait, since the PIN dialog closes and nothing else appears on screen while `fido2-assert` / `fido2-cred` block. upstream PR #2779 added `app/webauthn/touchPrompt.js`, a window shown around the security-key call and dismissed in a `finally` once the call settles, whichever way it resolves. Cancel is wired through an `AbortSignal` that `spawnFido2` reuses for the same detached-process-group kill the 60s timeout already used, so cancelling cannot leave a `fido2` child holding the device.
 
 This deviates from the retired research note, which recommended building the prompt on the shared `app/_shared/securePrompt.js` helper; the shipped window instead follows `pinDialog.js` as its own standalone, always-on-top `BrowserWindow`, so folding it into the shared secure prompt remains open and belongs in the same migration the roadmap already tracks for the PIN dialog.
 
-Hardware validation by [@spthiel on PR #2779](https://github.com/IsmaelMartinez/teams-for-linux/pull/2779#issuecomment-5163132960) confirmed the prompt appears with no visible gap after the PIN dialog closes, and that both Cancel and the timeout land on Microsoft's "We couldn't sign you in" page with no `fido2-assert` process left behind. The `auth.webauthn.enabled` off path remains open: Electron's native WebAuthn draws no UI on Linux, and it is not yet clear what Cancel would mean when the underlying Chromium call cannot be aborted.
+Hardware validation by @spthiel on upstream PR #2779 confirmed the prompt appears with no visible gap after the PIN dialog closes, and that both Cancel and the timeout land on Microsoft's "We couldn't sign you in" page with no `fido2-assert` process left behind. The `auth.webauthn.enabled` off path remains open: Electron's native WebAuthn draws no UI on Linux, and it is not yet clear what Cancel would mean when the underlying Chromium call cannot be aborted.
 
 ## Alternatives Considered
 
@@ -56,7 +60,7 @@ Preferred in principle, but electron/electron#24573 is still open with no Linux 
 
 ### Native Node.js FIDO2 library
 
-Evaluated `@vivokey/fido2`, `node-fido2-manager`, and `fido2-lib`. All of these either implement only the server side of FIDO2 (relying-party verification of assertions) or require native HID I/O that we would have to bundle as a compiled addon. `fido2-lib` is server-only. `node-fido2-manager` is a thin libfido2 binding that would make teams-for-linux responsible for distributing prebuilt binaries across four package formats (deb, rpm, AppImage, snap) for at least three architectures (x86_64, arm64, armv7l). Rejected: build/distribution burden is disproportionate to the benefit over shelling out to the distro-shipped `fido2-tools` binaries.
+Evaluated `@vivokey/fido2`, `node-fido2-manager`, and `fido2-lib`. All of these either implement only the server side of FIDO2 (relying-party verification of assertions) or require native HID I/O that we would have to bundle as a compiled addon. `fido2-lib` is server-only. `node-fido2-manager` is a thin libfido2 binding that would make the project responsible for distributing prebuilt binaries across its package formats (deb, rpm, AppImage, tar.gz) for at least three architectures (x86_64, arm64, armv7l). Rejected: build/distribution burden is disproportionate to the benefit over shelling out to the distro-shipped `fido2-tools` binaries.
 
 ### Chromium virtual authenticator API
 
@@ -74,7 +78,7 @@ Users on Linux can finally sign in to Microsoft accounts that require a hardware
 
 ### Negative
 
-Teams for Linux becomes responsible for a CLI-scraping integration that is sensitive to `fido2-tools` output format. Current implementation handles both libfido2 versions that echo input back on stdout (1.16.0+) and versions that do not, but new versions may introduce fresh quirks. See § "Known limitations" below.
+Outlook for Linux is responsible for a CLI-scraping integration that is sensitive to `fido2-tools` output format. Current implementation handles both libfido2 versions that echo input back on stdout (1.16.0+) and versions that do not, but new versions may introduce fresh quirks. See § "Known limitations" below.
 
 Per-ceremony process spawn has latency cost (a few hundred milliseconds) compared to an in-process authenticator. Acceptable for an authentication flow, noticeable but tolerable for ambient passkey autofill (which we disable anyway by passing `mediation === "conditional"` through to the native path).
 
@@ -90,15 +94,15 @@ The v1 implementation uses only the first connected FIDO2 device. Users with mul
 
 ## References
 
-- [#802 umbrella tracking ticket](https://github.com/IsmaelMartinez/teams-for-linux/issues/802)
-- [PR #2357 current implementation](https://github.com/IsmaelMartinez/teams-for-linux/pull/2357)
-- [PR #2353 initial attempt, reverted](https://github.com/IsmaelMartinez/teams-for-linux/pull/2353)
-- [PR #2356 revert](https://github.com/IsmaelMartinez/teams-for-linux/pull/2356)
+- #802 umbrella tracking ticket (upstream #802)
+- PR #2357 current implementation (upstream #2357)
+- PR #2353 initial attempt, reverted (upstream #2353)
+- PR #2356 revert (upstream #2356)
 - [electron/electron#24573 upstream tracking](https://github.com/electron/electron/issues/24573)
 - [libfido2 / fido2-tools upstream](https://github.com/Yubico/libfido2)
 - [Ferdium electron-webauthn-linux precedent](https://github.com/ferdium/ferdium-app/pull/2337)
-- [#2631 touch prompt request](https://github.com/IsmaelMartinez/teams-for-linux/issues/2631)
-- [PR #2779 touch prompt implementation](https://github.com/IsmaelMartinez/teams-for-linux/pull/2779)
+- #2631 touch prompt request (upstream #2631)
+- PR #2779 touch prompt implementation (upstream #2779)
 - [WebAuthn Level 3 W3C spec](https://www.w3.org/TR/webauthn-3/)
 - Local design notes: removed once the implementation shipped; see git history for `docs-site/docs/development/research/webauthn-fido2-implementation-plan.md`
 - Touch prompt research notes: removed once the implementation shipped; see git history for `docs-site/docs/development/research/fido2-touch-prompt-research.md`

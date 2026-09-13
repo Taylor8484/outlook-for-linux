@@ -4,15 +4,19 @@ id: 024-smartcard-pkcs11-pin-dialog
 
 # ADR 024: Smartcard PKCS#11 PIN Dialog
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. Issue and PR numbers refer to the upstream repository.
+:::
+
 ## Status
 
 ✅ Implemented (Phase 1)
 
 ## Context
 
-Corporate and government users authenticate to Teams with client certificates held on smartcards (national eID cards, PIV/CAC cards, YubiKeys in PIV mode). On Linux, Chromium reaches those certificates through NSS: the card is registered as a PKCS#11 module and NSS cannot read any certificate from it until the token is unlocked with a PIN.
+Corporate and government users authenticate to Microsoft 365 with client certificates held on smartcards (national eID cards, PIV/CAC cards, YubiKeys in PIV mode). On Linux, Chromium reaches those certificates through NSS: the card is registered as a PKCS#11 module and NSS cannot read any certificate from it until the token is unlocked with a PIN.
 
-Windows and macOS ship native PIN dialogs inside Chromium. Linux has no native UI layer for this, so Chromium exposes a callback and expects the embedding application to provide the prompt. Electron did not surface that callback for years; Electron 33 added `app.setClientCertRequestPasswordHandler`, which the repo's Electron 42 has. Until we registered a handler, smartcard-backed client-certificate authentication failed silently in Teams for Linux: NSS never received a PIN, no certificate was presented, and the user saw only a generic authentication failure with nothing to act on. Issue [#2639](https://github.com/IsmaelMartinez/teams-for-linux/issues/2639) reported exactly this, with a working proof-of-concept.
+Windows and macOS ship native PIN dialogs inside Chromium. Linux has no native UI layer for this, so Chromium exposes a callback and expects the embedding application to provide the prompt. Electron did not surface that callback for years; Electron 33 added `app.setClientCertRequestPasswordHandler`, which the repo's Electron 42 has. Until we registered a handler, smartcard-backed client-certificate authentication failed silently in Outlook for Linux: NSS never received a PIN, no certificate was presented, and the user saw only a generic authentication failure with nothing to act on. Issue upstream #2639 reported exactly this, with a working proof-of-concept.
 
 Before implementing, the design was validated by a spike that the reporter ran against real hardware. It established the three facts the implementation depends on. Resolving the handler's promise with an empty string does not cancel the request, it loops and re-prompts (without decrementing the card's retry counter). Rejecting the promise cleanly stops the prompting and also leaves the counter untouched. A genuinely wrong PIN sets `isRetry` on the next invocation and decrements the counter exactly once. The spike also showed that NSS calls the handler once per token unlock rather than once per request, and that NSS had already narrowed a multi-certificate card down to the single valid authentication certificate before the `select-client-certificate` event fired.
 
@@ -20,7 +24,7 @@ That last point matters because a smartcard's PIN budget is small (typically thr
 
 ## Decision
 
-Ship a Linux-only PIN dialog for PKCS#11 client certificates, gated behind `auth.clientCertificate.pinDialog.enabled` (default `false`). The PIN is collected in a separate, hardened prompt window owned by the main process and handed straight back to Electron. It is never injected into, rendered inside, or read back from the Teams web page.
+Ship a Linux-only PIN dialog for PKCS#11 client certificates, gated behind `auth.clientCertificate.pinDialog.enabled` (default `false`). The PIN is collected in a separate, hardened prompt window owned by the main process and handed straight back to Electron. It is never injected into, rendered inside, or read back from the Outlook web page.
 
 ### Architecture
 
@@ -34,9 +38,9 @@ Per the repo's PII rules, `hostname` and `tokenName` may identify the user's emp
 
 ### Rationale
 
-The security boundary is the point of this ADR. A smartcard PIN is not a website password: it unlocks a hardware credential that typically also signs and decrypts, and spending its retry budget destroys the credential rather than just failing a login. The Teams page is third-party code that Microsoft ships and changes without notice, running with `contextIsolation: false` so that our own browser tools can work against it, which means anything rendered or typed inside that page is reachable by page script and by whatever third-party script the page loads. Collecting the PIN in a main-process-owned window keeps it entirely outside the renderer that hosts untrusted code: the page cannot read the field, cannot observe the value, and cannot forge the prompt against the same window chrome.
+The security boundary is the point of this ADR. A smartcard PIN is not a website password: it unlocks a hardware credential that typically also signs and decrypts, and spending its retry budget destroys the credential rather than just failing a login. The Outlook page is third-party code that Microsoft ships and changes without notice, running with `contextIsolation: false` so that our own browser tools can work against it, which means anything rendered or typed inside that page is reachable by page script and by whatever third-party script the page loads. Collecting the PIN in a main-process-owned window keeps it entirely outside the renderer that hosts untrusted code: the page cannot read the field, cannot observe the value, and cannot forge the prompt against the same window chrome.
 
-The timing reinforces the same conclusion. The PIN request fires during a TLS handshake, frequently mid-navigation in the Microsoft login redirect chain, when there is no stable Teams document to inject into at all. The one mechanism that is both safe and available is a separate window.
+The timing reinforces the same conclusion. The PIN request fires during a TLS handshake, frequently mid-navigation in the Microsoft login redirect chain, when there is no stable Outlook document to inject into at all. The one mechanism that is both safe and available is a separate window.
 
 Extracting `app/_shared/securePrompt.js` rather than copying the shipped WebAuthn PIN dialog was a deliberate security call. Two copies of a secret-input dialog means two sets of IPC wiring, preload scripts and window options that can drift, and a hardening fix applied to one can silently miss the other. There is now one implementation going forward, with the already-shipped WebAuthn dialog migrating onto it opportunistically rather than a second copy being created.
 
@@ -44,9 +48,9 @@ Shipping off by default and Linux only follows the WebAuthn precedent (ADR-021).
 
 ## Alternatives Considered
 
-### In-page PIN entry via injection into the Teams DOM
+### In-page PIN entry via injection into the Outlook DOM
 
-The most "integrated" looking option, rendering the PIN field inside the Teams page through a browser tool in `app/browser/tools/`. This is the same shape as the WebAuthn module's dom-inject strategy, which was built and then removed for precisely this reason. The Teams page runs with `contextIsolation: false`, so a field injected there is readable by page script and by any third-party script the page loads, and the prompt would be indistinguishable from one the page itself could fabricate. Handing a hardware credential's unlock secret to a document we do not control is not a trade-off worth making at any UX benefit. The trigger timing rules it out independently, since the handshake often happens with no Teams document loaded.
+The most "integrated" looking option, rendering the PIN field inside the Outlook page through a browser tool in `app/browser/tools/`. This is the same shape as the WebAuthn module's dom-inject strategy, which was built and then removed for precisely this reason. The Outlook page runs with `contextIsolation: false`, so a field injected there is readable by page script and by any third-party script the page loads, and the prompt would be indistinguishable from one the page itself could fabricate. Handing a hardware credential's unlock secret to a document we do not control is not a trade-off worth making at any UX benefit. The trigger timing rules it out independently, since the handshake often happens with no Outlook document loaded.
 
 Rejected: it would expose a hardware token PIN to third-party page script in a context we do not control.
 
@@ -58,13 +62,13 @@ Rejected: no system-level prompt exists for the NSS client-certificate path on L
 
 ### Modal child window parented to the main window
 
-The existing `app/_shared/createDialogWindow.js` scaffolding used by Add Profile and Join Meeting is the right kind of surface, but the wrong modality for this trigger. A modal parented to a window that is actively navigating flashes and closes during page transitions, which is the failure mode already hit during the WebAuthn work, and the client-certificate PIN request fires exactly in the middle of the login redirect chain.
+The existing `app/_shared/createDialogWindow.js` scaffolding used by the profile dialogs is the right kind of surface, but the wrong modality for this trigger. A modal parented to a window that is actively navigating flashes and closes during page transitions, which is the failure mode already hit during the WebAuthn work, and the client-certificate PIN request fires exactly in the middle of the login redirect chain.
 
 Rejected: a modal attached to a navigating parent is dismissed by the navigation before the user can type.
 
 ### Frameless styled toast
 
-The `app/incomingCallToast/` and `app/notificationSystem/` windows are frameless and always on top, and they are what makes app UI feel native. They are fine for notices and wrong for secret input, because a frameless window with no chrome and no title gives the user nothing to check the prompt's origin against, which is precisely the check that matters before typing a PIN.
+The `app/notificationSystem/` toast windows are frameless and always on top, and they are what makes app UI feel native. They are fine for notices and wrong for secret input, because a frameless window with no chrome and no title gives the user nothing to check the prompt's origin against, which is precisely the check that matters before typing a PIN.
 
 Rejected: a chromeless surface offers no way for the user to verify what is asking for their PIN.
 
@@ -84,11 +88,11 @@ Rejected: duplicating a secret-input dialog invites security drift between the c
 
 ### Positive
 
-Linux users with smartcard-backed client certificates can now authenticate to Teams, where previously the attempt failed silently with no actionable error. The PIN never enters the Teams renderer, so no page script or third-party script loaded by Teams can observe it. The per-session attempt cap and the reject-on-cancel semantics mean the app cannot drain a card's PIN budget through a prompt loop, which was the worst realistic outcome of getting this wrong. `app/_shared/securePrompt.js` gives the growing family of authentication prompts a single audited window implementation to build on.
+Linux users with smartcard-backed client certificates can now authenticate to Outlook, where previously the attempt failed silently with no actionable error. The PIN never enters the Outlook renderer, so no page script or third-party script loaded by Outlook can observe it. The per-session attempt cap and the reject-on-cancel semantics mean the app cannot drain a card's PIN budget through a prompt loop, which was the worst realistic outcome of getting this wrong. `app/_shared/securePrompt.js` gives the growing family of authentication prompts a single audited window implementation to build on.
 
 ### Negative
 
-The feature is off by default, so affected users have to discover `auth.clientCertificate.pinDialog.enabled` and restart before they get any benefit, and the failure they hit without it is still the same silent one. Once the per-session cap is reached for a token, the only way to try again is to restart the application, which is deliberate but blunt. Teams for Linux now owns a security-sensitive input surface whose hardening properties (context isolation, sandbox, no node integration, secret only through the resolved promise) must not regress in future refactors.
+The feature is off by default, so affected users have to discover `auth.clientCertificate.pinDialog.enabled` and restart before they get any benefit, and the failure they hit without it is still the same silent one. Once the per-session cap is reached for a token, the only way to try again is to restart the application, which is deliberate but blunt. Outlook for Linux now owns a security-sensitive input surface whose hardening properties (context isolation, sandbox, no node integration, secret only through the resolved promise) must not regress in future refactors.
 
 ### Known limitations
 
@@ -101,8 +105,8 @@ The feature is off by default, so affected users have to discover `auth.clientCe
 
 ## References
 
-- [#2639 feature request](https://github.com/IsmaelMartinez/teams-for-linux/issues/2639)
-- [PR #2659 Phase 1 implementation](https://github.com/IsmaelMartinez/teams-for-linux/pull/2659)
+- #2639 feature request (upstream #2639)
+- PR #2659 Phase 1 implementation (upstream #2659)
 - `app/clientCertificate/index.js`: the PIN handler, platform guard and per-token attempt cap
 - `app/_shared/securePrompt.js`: the shared hardened secret-input window
 - `app/config/options.js`: `auth.clientCertificate.pinDialog.enabled`, default `false`, Linux only

@@ -3,320 +3,69 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > [!NOTE]
-> **For comprehensive documentation**, see the markdown files in `docs-site/docs/` directory. These files are the source for the [Teams for Linux Documentation Site](https://ismaelmartinez.github.io/teams-for-linux/). This file contains essential quick reference information and critical warnings specific to Claude Code workflows.
->
-> **Important for AI agents**: Always read documentation from the local markdown files in `docs-site/docs/` rather than fetching from the web. The URLs are provided for human reference only.
+> Comprehensive documentation lives in `docs-site/docs/` (Docusaurus, published to https://taylor8484.github.io/outlook-for-linux/). Read the local markdown rather than fetching the web version.
 
-## Essential Commands
+## What this repo is
 
-**Development:**
-- `npm start` - Run application in development mode with trace warnings
-- `npm run lint` - Run ESLint validation (mandatory before commits)
-- `npm run test:unit` - Fast unit suite (`node --test 'tests/unit/*.test.js'`); run before every commit
-- `npm run test:e2e` - Run end-to-end tests with Playwright
+Outlook for Linux is an unofficial Electron wrapper around the Outlook web app (`https://outlook.office.com/mail/`). It is a **re-fork of [teams-for-linux](https://github.com/IsmaelMartinez/teams-for-linux) v2.21.0**: the shared git history is kept on purpose, the Teams-only features (calls, screen sharing, camera/mic tools, backgrounds, stickers, quick chat, meeting join, MQTT, idle/presence, Graph API, deep links) were removed, and the rest was retargeted at Outlook.
 
-**Building:**
-- `npm run pack` - Development build without packaging
-- `npm run dist:linux` - Build Linux packages (AppImage, deb, rpm, snap)
-- `npm run dist` - Build all platforms using electron-builder
+- The remote `upstream` points at teams-for-linux. Bring in upstream fixes with `git merge upstream/main` rather than hand-porting. Keep Outlook-specific edits small and localized so those merges stay tractable; modify/delete conflicts on removed Teams modules resolve by keeping the deletion.
+- Default branch is `develop-outlook`. CI, release-please and the docs deploy run against it.
+- Many code comments inherited from upstream still say "Teams". Treat them as describing the web app in general, and fix them when you touch the code around them.
 
-**Utility:**
-- `npm run generate-release-info` - Generate release information file
-- `npm run generate-ipc-docs` - Generate IPC API documentation from code comments
-- `npm run generate-config-docs` - Regenerate `configuration-generated.md` and `config-schema.json`; mandatory after editing `app/config/options.js` (CI has a drift guard)
-
-**Release:**
-- Releases are managed by [release-please](https://github.com/googleapis/release-please) — merge the auto-generated Release PR to trigger a release
-- See `docs-site/docs/development/manual-release-process.md` for full details
-
-## Project Architecture
-
-Teams for Linux is an Electron-based desktop application that wraps the Microsoft Teams web app. The architecture follows a modular pattern with the main process coordinating various specialized modules.
-
-**Key file locations:**
-- **Entry Point:** `app/index.js` - Main Electron process (being refactored incrementally)
-- **Startup:** `app/startup/` - Command line switches and initialization
-- **Configuration:** `app/appConfiguration/` - Centralized configuration management
-- **Main Window:** `app/mainAppWindow/` - Primary BrowserWindow and Teams web wrapper
-- **Browser Tools:** `app/browser/tools/` - Client-side scripts injected into Teams interface
-
-**For detailed architecture information**, see:
-- Architecture Overview: `docs-site/docs/development/contributing.md` (Architecture Overview section)
-- IPC API Documentation: `docs-site/docs/development/ipc-api.md`
-- Module-specific README.md files in `app/` subdirectories
-
-**Web references (for humans):**
-- https://ismaelmartinez.github.io/teams-for-linux/development/contributing#architecture-overview
-- https://ismaelmartinez.github.io/teams-for-linux/development/ipc-api
-
-## Development Patterns
-
-### Code Style Requirements
-- **NO `var`** - Use `const` by default, `let` for reassignment
-- **async/await** - Use instead of promise chains
-- **Private fields** - Use JavaScript `#property` syntax for class private members
-- **Arrow functions** - For concise callbacks
-
-### Configuration Management
-- All configuration handled through `AppConfiguration` class
-- Treat config as immutable after startup
-- Changes via AppConfiguration methods only
-
-### IPC Communication
-- Use `ipcMain.handle` for request-response patterns
-- Use `ipcMain.on` for fire-and-forget notifications
-- Add a descriptive comment above each IPC channel registration
-- Run `npm run generate-ipc-docs` after adding/modifying IPC channels
-- All IPC channels must be added to the allowlist in `app/security/ipcValidator.js`
-
-### Error Handling
-- Robust error handling with try-catch in async functions
-- Graceful degradation with clear user feedback
-- Use `electron-log` for structured logging
-
-### Logging Guidelines
-
-**CRITICAL: PII Protection**
-
-Never log Personally Identifiable Information (PII) in production code:
-
-```javascript
-// WRONG - logs PII
-console.info(`Connecting to broker: ${brokerUrl}`);
-console.debug(`User email: ${email}`);
-console.error(`Auth failed for: ${username}`);
-
-// CORRECT - no PII
-console.info('[MQTT] Connecting to broker');
-console.debug('[AUTH] Processing user authentication');
-console.error('[AUTH] Authentication failed', { errorCode: err.code });
-```
-
-**Sensitive data that must NEVER be logged:**
-- MQTT broker URLs, usernames, passwords, topics
-- Email addresses, usernames, account IDs
-- Authentication tokens, API keys, credentials
-- Custom service URLs (customBackground, etc.)
-- Certificate fingerprints and issuer details
-- SSO/Intune account information
-- URL query parameters (may contain tokens)
-
-**Logging levels - use appropriately:**
-- `console.error` - Errors requiring attention
-- `console.warn` - Warnings about potential issues
-- `console.info` - Key state changes (startup, connection established)
-- `console.debug` - Development debugging only (use sparingly)
-
-**When adding new logs:**
-1. Ask: "Is this log necessary in production?"
-2. Ask: "Could this log expose sensitive information?"
-3. Prefer fewer, more meaningful logs over verbose debugging
-4. Use structured data without PII: `{ status: 'connected', retryCount: 3 }`
-
-**Debugging with PII (branch PRs only):**
-
-If you need to log sensitive data for debugging during development:
-1. Only add such logs in feature branch PRs
-2. Mark them clearly: `// DEBUG-ONLY: Remove before merge`
-3. Remove ALL debug logs with PII before the PR is merged
-4. Never merge PII-containing logs to main branch
-
-**For detailed logging research**, see `docs-site/docs/development/adr/013-pii-log-sanitization.md` ([web version](https://ismaelmartinez.github.io/teams-for-linux/development/adr/013-pii-log-sanitization)).
-
-**For complete development patterns and guidelines**, see `docs-site/docs/development/contributing.md` ([web version](https://ismaelmartinez.github.io/teams-for-linux/development/contributing)).
-
-## Testing and Quality
-
-### Automated Testing
-
-The project uses Playwright for end-to-end testing:
-- **Framework**: Playwright with Electron support
-- **Test Location**: `tests/e2e/`
-- **Run Tests**: `npm run test:e2e`
-- **Clean State**: Tests use temporary userData directories for isolation
-
-**E2E Testing Patterns:**
-- Each test creates a unique temp directory via `E2E_USER_DATA_DIR`
-- Tests start with completely clean state (no cookies, cache, storage)
-- Validates complete app launch flow and Microsoft login redirect
-
-**Unit tests have no DOM** (`node:test` plus `node:vm`, no jsdom), so tests for injected browser scripts assert on the generated source text rather than behaviour. To verify what a renderer actually does, run a throwaway main script with `node_modules/.bin/electron probe.js` using a hidden `BrowserWindow` and `executeJavaScript`. Create every window up front and run the cases in parallel; destroying and reloading windows in a loop produces spurious `ERR_FAILED`.
-
-**For full testing strategy**, see `docs-site/docs/development/adr/009-automated-testing-strategy.md` ([web version](https://ismaelmartinez.github.io/teams-for-linux/development/adr/009-automated-testing-strategy)).
-
-### Quality Checks
-
-When contributing:
-- Run `npm run lint` before commits (ESLint with custom config)
-- Run `npm run test:e2e` to verify E2E tests pass
-- Ensure cross-platform compatibility (Linux primary, Windows/macOS supported)
-
-## Documentation
-
-### Documentation Site
-
-The project documentation is built with Docusaurus and deployed to GitHub Pages:
-- **URL**: https://ismaelmartinez.github.io/teams-for-linux/
-- **Platform**: Docusaurus 3.9.2
-- **Local Development**: `cd docs-site && npm run start`
-- **Deployment**: Automated via GitHub Actions
-
-**For documentation development**, see [docs-site/README.md](docs-site/README.md).
-
-### Markdown Standards
-
-**All markdown files in this project** should follow the project's markdown standards:
-- See `docs-site/docs/development/contributing.md` (Markdown Standards section) for comprehensive guidelines ([web version](https://ismaelmartinez.github.io/teams-for-linux/development/contributing#markdown-standards))
-- Applies to documentation, README files, task lists, PRDs, and all markdown content
-
-### Documentation Updates
-
-When making code changes, update relevant documentation in the same PR:
-- Module README.md files when changing functionality
-- **IPC channels**: Add descriptive comments above registrations and run `npm run generate-ipc-docs`
-- Configuration documentation for new options in `docs-site/docs/configuration.md`
-- Architecture Decision Records (ADRs) for significant technical decisions in `docs-site/docs/development/adr/`
-
-**Important for IPC changes:**
-When adding or modifying IPC channels, you must:
-1. Add a descriptive comment above the `ipcMain.handle()` or `ipcMain.on()` registration
-2. Add the channel to the allowlist in `app/security/ipcValidator.js`
-3. Run `npm run generate-ipc-docs` to update the auto-generated documentation
-4. The auto-generated docs in `docs-site/docs/development/ipc-api-generated.md` should be committed with your changes
-
-## Critical Module Initialization Requirements
-
-### Modules Requiring IPC Initialization (Issue #1902)
-
-**CRITICAL: DO NOT REMOVE** - The `trayIconRenderer` and `mqttStatusMonitor` modules **MUST** be included in the list of modules that receive `ipcRenderer` during initialization in `app/browser/preload.js`.
-
-```javascript
-// REQUIRED: These modules need ipcRenderer for IPC communication
-const modulesRequiringIpc = ["settings", "theme", "trayIconRenderer", "mqttStatusMonitor"];
-if (modulesRequiringIpc.includes(module.name)) {
-  moduleInstance.init(config, ipcRenderer);
-}
-```
-
-**Why this is critical:**
-- The `trayIconRenderer` module requires `ipcRenderer` to communicate with the main process for tray icon updates
-- The `mqttStatusMonitor` module requires `ipcRenderer` to send Teams status changes to the main process for MQTT publishing
-- Without these, tray icon functionality (badge counts, notifications) and MQTT status publishing break completely
-- This fix has been accidentally removed multiple times in git history, causing recurring issues
-- Most recently addressed in issue #1902
-
-**When modifying preload.js:**
-- Always verify `trayIconRenderer` and `mqttStatusMonitor` are in the condition that passes `ipcRenderer` to `init()`
-- Do NOT remove these modules from the list, even if they seem redundant
-- Test tray icon functionality and MQTT status publishing thoroughly after any changes to module initialization
-- Reference this documentation if unclear why these modules need special handling
-
-## AI Workflow Instructions
-
-- Always run tests and linting before commits
-- Update documentation alongside code changes
-
-### Creating Pull Requests
-
-When opening a PR that resolves a GitHub issue, always include a `closes #NNN` (or `fixes #NNN` / `resolves #NNN`) line in the PR body. GitHub uses these keywords to link the PR to the originating issue and auto-close it on merge, which is how users tracing a bug report find the fix.
-
-Example PR body footer:
-```
-closes #2293
-```
-
-Without this, the release notes will show the PR but not the originating issue, reducing traceability for users looking up bug reports.
-
-### Responding to PR Review Comments
-
-When a PR has review comments, address them proactively:
-
-1. Fetch PR comments using `gh api repos/IsmaelMartinez/teams-for-linux/pulls/{PR_NUMBER}/comments`
-2. For each actionable review comment (not automated bots like changelog, build artifacts, SonarQube):
-   - Make the requested code changes
-   - Commit and push the changes
-3. Reply to the review by adding a PR comment summarizing all changes made, referencing the discussion IDs
-4. Use `gh pr comment {PR_NUMBER} --body "..."` to post the summary
-
-### Development Roadmap
-
-**IMPORTANT:** The project maintains a development roadmap at `docs-site/docs/development/plan/roadmap.md`.
-
-**Before starting work:**
-- Check the roadmap to understand current priorities and feature status
-- Verify the feature you're implementing aligns with the roadmap
-
-**After implementing a feature (PR merged):**
-- Update the roadmap to reflect the completed work
-- Move completed features to appropriate sections or remove if fully done
-- Update status indicators (Ready → Implemented, etc.)
-- Add any new insights or follow-up work discovered during implementation
-
-**Label note:** The GitHub label `release ready` (formerly `ready`) means the fix is merged to main and included in the next release. When triaging, apply `release ready` only to issues or PRs that are done and waiting for the release cut.
-
-**Roadmap sections:**
-- **Ready for Implementation** - Features with completed research, ready to build
-- **User Feedback Received** - MVP shipped, user feedback identifies gaps to address
-- **Requires Validation First** - Features needing spikes/validation before implementation
-- **Stalled** - Work started but blocked (e.g., awaiting user validation)
-- **Awaiting User Feedback** - Shipped features, waiting for requests before expanding
-- **Not Planned / Not Feasible** - Rejected or infeasible features with rationale
-
-## Important Notes
-
-- The project is undergoing active refactoring to improve modularity
-- New functionality should be placed in separate modules rather than `app/index.js`
-- Browser scripts must be defensive as Teams DOM can change without notice
-- Follow single responsibility principle for new modules
-- Update module-specific README.md files when making changes
-- Cross-platform compatibility is essential (Linux primary, Windows/macOS supported)
-- A PR showing `BLOCKED` with every check green usually means the `block develop` ruleset's CodeQL requirement is unmet: runs from bots and first-time contributors sit in `action_required` and need "Approve and run workflows", so CodeQL never reports
-- `gh run list` is often refused by the permission classifier; `gh api repos/{owner}/{repo}/actions/runs` works
-- A merged release-please PR produces a **draft** release (`releaseType: draft` in `package.json`). It is published by hand, ships as a pre-release, and `releases/latest` keeps pointing at the previous version until it is promoted
-
-## Additional Resources
-
-**Local documentation files (read these):**
-- **Development Roadmap**: `docs-site/docs/development/plan/roadmap.md` - Future development priorities and feature status
-- **Quick Reference Guide**: `docs-site/docs/quick-reference.md` - Fast access to commands, configs, and troubleshooting
-- **Module Index**: `docs-site/docs/development/module-index.md` - Complete catalog of all application modules
-- **ADR Index**: `docs-site/docs/development/adr/README.md` - Architecture decision records and rationale
-- **Research Index**: `docs-site/docs/development/research/README.md` - Feature research and investigations
-- **Full Contributing Guide**: `docs-site/docs/development/contributing.md`
-- **Release Process**: `docs-site/docs/development/manual-release-process.md` - Release workflow using release-please
-- **Configuration Reference**: `docs-site/docs/configuration.md`
-- **Troubleshooting Guide**: `docs-site/docs/troubleshooting.md`
-- **IPC API Documentation**: `docs-site/docs/development/ipc-api.md`
-
-**Web versions (for human reference):**
-- https://ismaelmartinez.github.io/teams-for-linux/development/plan/roadmap
-- https://ismaelmartinez.github.io/teams-for-linux/quick-reference
-- https://ismaelmartinez.github.io/teams-for-linux/development/module-index
-- https://ismaelmartinez.github.io/teams-for-linux/development/adr/
-- https://ismaelmartinez.github.io/teams-for-linux/development/research/
-- https://ismaelmartinez.github.io/teams-for-linux/development/contributing
-- https://ismaelmartinez.github.io/teams-for-linux/configuration
-- https://ismaelmartinez.github.io/teams-for-linux/troubleshooting
-- https://ismaelmartinez.github.io/teams-for-linux/development/ipc-api
-
-## Repo Butler
-
-This repo is monitored by [Repo Butler](https://github.com/IsmaelMartinez/repo-butler), a portfolio health agent that observes repo health daily and generates dashboards, governance proposals, and tier classifications.
-
-**Your report:** https://ismaelmartinez.github.io/repo-butler/teams-for-linux.html
-**Portfolio dashboard:** https://ismaelmartinez.github.io/repo-butler/
-**Consumer guide:** https://github.com/IsmaelMartinez/repo-butler/blob/main/docs/consumer-guide.md
-
-### Querying Reginald (the butler MCP server)
-
-To query your repo's health tier, governance findings, and portfolio data from any Claude Code session, add the MCP server once (adjust the path to your local repo-butler checkout):
+## Commands
 
 ```bash
-claude mcp add repo-butler node /path/to/repo-butler/src/mcp.js
+npm ci                         # install (npm, not yarn; Node 24 per .nvmrc)
+npm start                      # run from source (prestart runs npm ci)
+npm run lint                   # CI lint command
+npm run test:unit              # node --test 'tests/unit/*.test.js'
+node --test tests/unit/profilesManager.test.js   # a single unit test file
+npm run test:e2e               # Playwright against the real app (opens windows)
+npm run generate-config-docs   # REQUIRED after editing app/config/options.js (CI drift guard)
+npm run generate-ipc-docs      # after adding/changing IPC channels
+npm run dist:linux             # deb/rpm/tar.gz/AppImage via electron-builder
+cd docs-site && npm ci && npm run build   # docs build; onBrokenLinks is 'throw'
 ```
 
-Available tools: `get_health_tier`, `get_campaign_status`, `query_portfolio`, `get_snapshot_diff`, `get_governance_findings`, `trigger_refresh`.
+- `npm run lint` passes `**/*.js` unquoted, so the shell expands it and only one directory level is linted. For a real check run `npx eslint 'app/**/*.js' 'tests/**/*.js' 'scripts/**/*.js'`. That surfaces errors inherited from upstream (webauthn modules, ESM e2e specs parsed as CommonJS); don't add new ones.
+- Run from source, the Electron app name is `Electron`, so user data goes to `~/.config/Electron`. Use `E2E_USER_DATA_DIR=<dir>` for a throwaway profile. Packaged builds use `~/.config/outlook-for-linux` (config in `config.json` there, system-wide `/etc/outlook-for-linux/config.json`).
+- Every build runs `scripts/generateReleaseInfo.js`, which fails unless `io.github.taylor8484.outlook_for_linux.appdata.xml` has a `<release>` with notes for the current `package.json` version.
 
-When working on health improvements, check the per-repo report for the current tier checklist and use the consumer guide for fix instructions.
+## Architecture
 
-If this repo deploys a page, set its GitHub repository Homepage URL (the Website field in the repo's About section — not `package.json`'s `homepage`) to the canonical URL. That's how repo-butler surfaces the deployed link in dashboards and agent cards.
+**Main process** (`app/index.js`): installs IPC security, builds `AppConfiguration`, creates the services (notifications, custom toasts, downloads, partitions, profiles), then on `ready` calls `mainAppWindow.onAppReady(appConfig, profilesManager)` and wires the optional features (client-certificate PIN, CA allowlist, WebAuthn, global shortcuts, AppImage auto-updater, multi-account views).
+
+**Configuration** (`app/config/`): `options.js` is the single schema (yargs options plus doc/schema generator input). Values come from CLI args, env vars and the merged system + user `config.json`. ADR-025 is migrating flat option names to nested namespaces: modules still read the **flat** key, and `renames.js` projects a user-supplied nested value onto it. Adding an option means `options.js` (plus a `renames.js` entry if it has both spellings) and `npm run generate-config-docs`.
+
+**Main window** (`app/mainAppWindow/`):
+- `browserWindowManager.js` creates the `BrowserWindow` with `contextIsolation: false` (needed so `preload.js` can replace `window.Notification` in the page's context), compensated by the IPC allowlist.
+- `index.js` owns everything that talks to the web session: auth-cookie cleanup on start/resume, keeping the MSAL cache-encryption cookie persistent, opt-in auth recovery (`auth.reauthRecovery`, triggered by MSAL `InteractionRequired` from `TRUSTED_AUTH_SOURCES`), telemetry host blocking, report-only CSP stripping for non-Outlook hosts, the `about:blank` popup workaround for MSAL silent auth, and link handling (external browser by default, Ctrl+click prompts to open in-app). Command-line args that are Outlook URLs load into the running window.
+- `app/connectionManager/` does the actual `loadURL`/reload after an online check.
+
+**Renderer** (`app/browser/preload.js`): overrides `window.Notification` (routing to `web`, `electron` or `custom` via `notificationMethod`), exposes `globalThis.electronAPI`, forwards renderer errors to main, and loads the browser tools: `zoom`, `shortcuts`, `emulatePlatform`, `webauthnOverride`, `trayIconRenderer`.
+
+**IPC**: `app/security/ipcSecurity.js` wraps `ipcMain.handle/on/once` so every renderer-initiated channel must be in `app/security/ipcValidator.js`. For a new channel: add a descriptive comment above the registration, add it to the allowlist, run `npm run generate-ipc-docs`. `tests/unit/ipcValidator.test.js` fails if a registered channel is missing from the allowlist.
+
+**Multi-account** (`multiAccount.enabled`, mutually exclusive with Intune): `app/profilesManager/` persists profiles; `app/mainAppWindow/profileViewManager.js` overlays one `WebContentsView` per profile on the main window. Profile 0 is the root window itself on the legacy partition `persist:outlook-4-linux`; other profiles use `persist:outlook-profile-<uuid>`. Known gap: profile views don't get the root window's popup, request, Intune or password pre-fill handlers.
+
+**Sign-in helpers**: `app/intune/` (Microsoft Identity Broker over D-Bus), `app/webauthn/` (FIDO2 keys via `fido2-tools`, Linux only), `app/clientCertificate/` + `app/_shared/securePrompt*` (smartcard PIN), `app/ssoPasswordPrefill/` (web login form pre-fill), `app/login/` (native HTTP Basic/NTLM dialog), `app/certificate/` (custom CA fingerprints).
+
+### Critical: preload IPC module list
+
+`modulesRequiringIpc` in `app/browser/preload.js` **must** contain `trayIconRenderer` and `webauthnOverride`; they get `ipcRenderer` passed to `init()`. Without it the tray/badge updates and security-key support silently break (upstream issue #1902, regressed several times). `tests/unit/preloadModules.test.js` guards this.
+
+## Outlook-specific rules
+
+- **Host lists** exist in several places and must stay in sync: `OUTLOOK_DOMAINS` and `TRUSTED_AUTH_SOURCES` in `app/mainAppWindow/index.js`, `OUTLOOK_HOST_RE` in `app/mainAppWindow/profileViewManager.js`, and the host sets in `tests/e2e/helpers/electronApp.js`, `tests/e2e/notifications.spec.js` and `tests/e2e/authenticated/`. App hosts are `outlook.office.com`, `outlook.office365.com`, `outlook.cloud.microsoft`, `outlook.live.com`. Never match the bare `outlook.com` suffix: it also covers SafeLinks redirectors (`*.safelinks.protection.outlook.com`).
+- **Menu accelerators** are registered on the window and beat the page. Outlook on the web uses Ctrl+R (reply), Ctrl+D (delete) and Ctrl+Q (mark as read), so the app menu uses F5 / F12 / Ctrl+Shift+Q. Check Outlook's shortcuts before adding any accelerator.
+- **Injected scripts** must be defensive: Outlook's DOM changes without notice.
+- **Open follow-ups** (see `docs-site/docs/development/plan/roadmap.md`): the unread badge still relies on a `(N)` title prefix (`mutationTitle.js`) that Outlook doesn't reliably set; there is no `mailto:` handler; Outlook pop-out/print windows are denied by the `about:blank` workaround and default link handling; per-profile popup/auth wiring; the profile switcher pill position was chosen for the Teams layout.
+
+## Conventions
+
+- `const`/`let` only (`no-var`), `===` (`eqeqeq`), async/await, `#private` class fields, CommonJS modules.
+- New functionality goes in its own `app/<module>/` with a README, not in `app/index.js`. Update the module README and `docs-site/docs/development/module-index.md` when behaviour changes.
+- **Never log PII**: no emails, usernames, account/tenant IDs, tokens, URL query strings, certificate details or config values. Log structured, non-identifying data (`console.error('[AUTH] failed', { code })`). PII-carrying debug logs are allowed only on feature branches, marked `// DEBUG-ONLY: Remove before merge` (`tests/unit/debugOnlyMarkers.test.js` checks this). Renderer error text is passed through `app/utils/logSanitizer.js`.
+- Unit tests have no DOM (`node:test` + `node:vm`), so tests for injected browser scripts assert on source text. To check real renderer behaviour, run a throwaway main script with `node_modules/.bin/electron probe.js` using hidden windows and `executeJavaScript`.
+- Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:` …); release-please builds the changelog and a **draft** GitHub release from them.

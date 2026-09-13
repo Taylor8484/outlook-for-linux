@@ -1,6 +1,6 @@
 # Intune Integration
 
-This module provides integration with Microsoft Intune for Single Sign-On (SSO) and enterprise management features. It handles authentication flow and ensures compliance with Intune policies.
+This module provides integration with Microsoft Intune for Single Sign-On (SSO) and enterprise management features. It handles the authentication flow and ensures compliance with Intune policies when signing in to Outlook.
 
 ## Prerequisites
 
@@ -18,13 +18,13 @@ Before enabling Intune SSO, ensure the following components are installed and co
 
 3. **Valid Intune Account**: At least one Intune-managed account must be configured
    - Account must have valid Primary Refresh Token (PRT)
-   - Account should have appropriate Teams/Office 365 licenses
+   - Account should have an Exchange Online / Microsoft 365 licence that includes Outlook
 
 ### Configuration
 
 Enable Intune SSO in your configuration file. You can place the configuration in either:
 
-**User-specific**: `~/.config/teams-for-linux/config.json`
+**User-specific**: `~/.config/outlook-for-linux/config.json`
 ```json
 {
   "auth": {
@@ -36,7 +36,7 @@ Enable Intune SSO in your configuration file. You can place the configuration in
 }
 ```
 
-**System-wide** (common in enterprise environments): `/etc/teams-for-linux/config.json`
+**System-wide** (common in enterprise environments): `/etc/outlook-for-linux/config.json`
 ```json
 {
   "auth": {
@@ -52,7 +52,7 @@ Enable Intune SSO in your configuration file. You can place the configuration in
 - `auth.intune.enabled`: Enable/disable Intune SSO integration (default: false)
 - `auth.intune.user`: Specific user account to use (default: "" - uses first available account)
 
-**Migration note:** The legacy flat keys `ssoInTuneEnabled` and `ssoInTuneAuthUser` were removed in this release. Move any existing values to `auth.intune.enabled` and `auth.intune.user` respectively before upgrading.
+Intune SSO is mutually exclusive with the in-app multi-account profile switcher (`multiAccount.enabled`). To use several accounts alongside Intune, run [separate instances](multiple-instances.md#separate-isolated-instances-command-line) instead.
 
 ## Troubleshooting
 
@@ -79,7 +79,7 @@ Enable Intune SSO in your configuration file. You can place the configuration in
 Enable debug logging to see detailed Intune diagnostics:
 
 ```bash
-ELECTRON_ENABLE_LOGGING=true teams-for-linux
+ELECTRON_ENABLE_LOGGING=true outlook-for-linux
 ```
 
 Look for `[INTUNE_DIAG]` prefixed messages that provide information about:
@@ -91,7 +91,7 @@ Look for `[INTUNE_DIAG]` prefixed messages that provide information about:
 ### Verification
 
 To verify Intune integration is working:
-1. Start teams-for-linux with debug logging enabled
+1. Start `outlook-for-linux` with debug logging enabled
 2. Look for `[INTUNE_DIAG] InTune SSO account configured successfully`
 3. The app should automatically authenticate
 

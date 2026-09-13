@@ -2,13 +2,17 @@
 title: "Architecture Decision Records"
 sidebar_position: 1
 type: reference
-last_updated: 2026-09-05
+last_updated: 2026-09-13
 tags: [adr, architecture, decisions]
 ---
 
 # Architecture Decision Records (ADRs)
 
-This directory contains Architecture Decision Records documenting significant technical decisions made in the Teams for Linux project.
+This directory contains Architecture Decision Records documenting significant technical decisions made in the Outlook for Linux project.
+
+:::info Inherited decisions
+Outlook for Linux is based on [teams-for-linux](https://github.com/IsmaelMartinez/teams-for-linux). The ADRs below were written in that project and carried over because they still govern code that this app kept. Issue and PR numbers inside them refer to the upstream teams-for-linux repository. ADRs about features that were removed in the Outlook conversion (screen sharing, MQTT, quick chat, Graph API, token cache, cross-distro Docker testing, upstream bots and dashboards) were not carried over; their numbers are intentionally left as gaps.
+:::
 
 ## What are ADRs?
 
@@ -23,25 +27,12 @@ Architecture Decision Records capture important architectural decisions along wi
 
 | ADR | Title | Status | Date | Version |
 |-----|-------|--------|------|---------|
-| [001](001-desktopcapturer-source-id-format.md) | DesktopCapturer Source ID Format | ✅ Implemented | 2025-09-15 | v2.3.0+ |
-| [002](002-token-cache-secure-storage.md) | Token Cache Secure Storage | ✅ Implemented | 2025-09-08 | v2.5.9 |
-| [003](003-token-refresh-implementation.md) | Token Refresh Implementation | ✅ Implemented | 2025-09-22 | v2.6.0 |
 | [004](004-agents-md-standard-investigation.md) | agents.md Standard Investigation | ❌ Rejected | 2025-11-16 | N/A |
-| [005](005-ai-powered-changelog-generation.md) | AI-Powered Changelog Generation | 🔄 Superseded by [023](023-release-automation-tooling.md) | 2025-11-17 | v2.6.15 |
 | [006](006-cli-argument-parsing-library.md) | CLI Argument Parsing Library | ✅ Implemented | 2025-11-19 | N/A |
-| [007](007-embedded-mqtt-broker.md) | Embedded MQTT Broker | ❌ Rejected | 2025-11-19 | N/A |
-| [008](008-usesystempicker-electron-38.md) | useSystemPicker Feature for Electron 38 | ❌ Rejected | 2025-11-24 | N/A |
 | [009](009-automated-testing-strategy.md) | Automated Testing Strategy | ✅ Implemented | 2025-12-13 | v2.7.4+ |
-| [010](010-multiple-windows-support.md) | Multiple Windows Support | ❌ Rejected | 2025-11-26 | N/A |
 | [011](011-appimage-update-info.md) | AppImage Update Info for Third-Party Managers | 🔄 Superseded | 2026-01-25 | v2.7.1 |
 | [012](012-intune-sso-broker-compatibility.md) | Intune SSO Broker Compatibility | ✅ Implemented | 2026-01-25 | v2.7.1 |
 | [013](013-pii-log-sanitization.md) | PII Log Sanitization | ✅ Implemented | 2026-01-31 | v2.7.3 |
-| [014](014-quick-chat-deep-link-approach.md) | Quick Chat Deep Link Approach | ✅ Implemented | 2026-01-31 | v2.7.3 |
-| [015](015-quick-chat-inline-messaging.md) | Quick Chat Inline Messaging | ✅ Implemented | 2026-02-04 | N/A |
-| [016](016-cross-distro-testing-environment.md) | Cross-Distro Testing Environment | ✅ Implemented | 2026-02-25 | v2.7.9 |
-| [017](017-workflow-run-pr-comments.md) | Use workflow_run for PR Artifact Comments | ✅ Implemented | 2026-02-26 | N/A |
-| [018](018-issue-triage-bot-github-app-migration.md) | Issue Triage Bot GitHub App Migration | ✅ Implemented | 2026-03-06 | N/A |
-| [019](019-repo-activity-dashboard.md) | Repository Activity Dashboard | ✅ Implemented | 2026-03-11 | N/A |
 | [020](020-multi-account-profile-switcher.md) | Multi-Account Profile Switcher | ✅ Implemented | 2026-04-16 | v2.9.0+ |
 | [021](021-webauthn-fido2-linux.md) | WebAuthn / FIDO2 Hardware Security Keys on Linux | ✅ Implemented | 2026-04-21 | v2.10.0 |
 | [022](022-custom-notification-toast-scope.md) | Custom Notification Toast Scope | ✅ Implemented | 2025-11-16 | v2.6.16 |
@@ -51,8 +42,9 @@ Architecture Decision Records capture important architectural decisions along wi
 | [026](026-performance-audit-outcomes.md) | Performance Audit Outcomes | ✅ Accepted | 2026-08-11 | N/A |
 | [028](028-third-party-idp-otc-prefill.md) | One-Time-Code Pre-fill on Third-Party IdPs | ❌ Rejected | 2026-08-19 | N/A |
 | [029](029-config-schema-single-source-of-truth.md) | Configuration Schema as Single Source of Truth | ✅ Accepted | 2026-09-05 | v2.12.0+ |
-| [030](030-graph-api-teams-session-token.md) | Graph API Access via the Teams Session Token | ✅ Implemented | 2025-11-21 | v2.6.17 |
 | [031](031-ozone-platform-x11-default.md) | Keep the `--ozone-platform=x11` Default on Wayland | ✅ Accepted | 2026-09-05 | N/A |
+
+Versions refer to the teams-for-linux release in which the decision shipped.
 
 **Legend:**
 - ✅ **Implemented** - Decision accepted and code in production
@@ -67,73 +59,46 @@ Architecture Decision Records capture important architectural decisions along wi
 
 | ADR | Title | Summary |
 |-----|-------|---------|
-| [002](002-token-cache-secure-storage.md) | Token Cache Secure Storage | Secure token storage using Electron safeStorage with OS-level encryption to prevent daily re-authentication |
-| [003](003-token-refresh-implementation.md) | Token Refresh Implementation | Configurable token refresh mechanism to proactively renew authentication before expiry |
 | [012](012-intune-sso-broker-compatibility.md) | Intune SSO Broker Compatibility | Direct D-Bus invocation for Microsoft Identity Broker version compatibility |
 | [013](013-pii-log-sanitization.md) | PII Log Sanitization | Custom regex sanitizer to redact sensitive data from logs |
 | [021](021-webauthn-fido2-linux.md) | WebAuthn / FIDO2 Hardware Security Keys | FIDO2 hardware key support on Linux via fido2-tools interception |
-| [024](024-smartcard-pkcs11-pin-dialog.md) | Smartcard PKCS#11 PIN Dialog | PIN collected in a hardened main-process window, never injected into the Teams page |
+| [024](024-smartcard-pkcs11-pin-dialog.md) | Smartcard PKCS#11 PIN Dialog | PIN collected in a hardened main-process window, never injected into the web app page |
 | [028](028-third-party-idp-otc-prefill.md) | One-Time-Code Pre-fill on Third-Party IdPs | Rejected DOM-based OTC pre-fill for Okta and similar; Electron cannot host a password-manager extension, so contract-backed factors are the answer |
-| [030](030-graph-api-teams-session-token.md) | Graph API Access via the Teams Session Token | Reuse the Teams web app's own Graph token for API access instead of registering a separate Azure AD application |
 
 **Key Outcomes:**
-- Eliminated daily re-authentication issues
-- Platform-native secure storage (Keychain/DPAPI/kwallet)
-- Graceful fallback for unsupported platforms
-- Configurable refresh intervals
 - Support for Microsoft Identity Broker versions ≤ 2.0.1 and > 2.0.1
 - PII sanitization with zero dependencies, UUIDs correlatable for debugging
-- Graph API token reuse needs no app registration or admin consent, but caps scopes at what Teams web already holds (`/me/presence` returns 403)
-
-### Screen Sharing
-
-| ADR | Title | Summary |
-|-----|-------|---------|
-| [001](001-desktopcapturer-source-id-format.md) | DesktopCapturer Source ID Format | Use `screen:x:y` format throughout screen sharing pipeline for Wayland compatibility |
-| [008](008-usesystempicker-electron-38.md) | useSystemPicker Feature for Electron 38 | Rejected OS native picker due to incomplete Linux Wayland/PipeWire support |
-
-**Key Outcomes:**
-- Fixed Wayland screen sharing preview
-- Standardized source identification
-- Improved cross-platform compatibility
-- Deferred native picker until Linux support available
+- Hardware security keys and smartcards usable on Linux, with secrets kept out of the web app renderer
 
 ### Linux Desktop & Display Server
 
 | ADR | Title | Summary |
 |-----|-------|---------|
-| [031](031-ozone-platform-x11-default.md) | Keep the `--ozone-platform=x11` Default on Wayland | Ship `--ozone-platform=x11` as the default on deb, rpm, AppImage and snap; #2506 was reverted the same day as an accidental merge, and #2601 was closed unmerged after a regression, with concrete reopen triggers recorded |
+| [031](031-ozone-platform-x11-default.md) | Keep the `--ozone-platform=x11` Default on Wayland | Ship `--ozone-platform=x11` as the default on deb, rpm and AppImage after upstream attempts to remove it regressed, with concrete reopen triggers recorded |
 
 **Key Outcomes:**
-- Predictable default rendering path across deb, rpm, AppImage, tar.gz and snap
+- Predictable default rendering path across the `.desktop`-launched formats
 - `electronCLIFlags` cannot override the flag; only a genuine command-line or `.desktop` override can
-- Reopen triggers tied to a working snap core24 migration, a verified Electron/Chromium fix, and ADR-016 matrix validation
 
 ### Testing & Quality
 
 | ADR | Title | Summary |
 |-----|-------|---------|
 | [009](009-automated-testing-strategy.md) | Automated Testing Strategy | Smoke testing with Playwright; comprehensive testing impractical due to MS authentication constraints |
-| [016](016-cross-distro-testing-environment.md) | Cross-Distro Testing Environment | Docker-based manual testing across 9 distro/display server combinations via noVNC, hosted on GitHub Codespaces |
 
 **Key Outcomes:**
 - Playwright E2E smoke tests validate app launch and login redirect
 - Tests run in isolated temp directories for clean state
 - Manual testing remains primary quality gate for feature changes
-- Low maintenance approach suitable for volunteer-maintained project
-- 9 cross-distro configurations testable from a browser via Codespaces
-- Apple Silicon limitation documented (V8 4GB heap cap under Rosetta 2)
 
 ### Performance
 
 | ADR | Title | Summary |
 |-----|-------|---------|
-| [026](026-performance-audit-outcomes.md) | Performance Audit Outcomes | Closes the system performance research: outcomes for all ten findings, timeout-budget offline detection, no instrumentation module |
+| [026](026-performance-audit-outcomes.md) | Performance Audit Outcomes | Outcomes for the performance audit findings that still apply, timeout-budget offline detection, no instrumentation module |
 
 **Key Outcomes:**
-- All ten audit findings closed with explicit outcomes and reopen triggers
 - Offline detection bounded by a 20 s budget that assumes online on exhaustion
-- MutationObserver consolidation rejected; scope-narrowing and polling reduction reserved as first levers
 - No performance instrumentation, deliberately
 
 ### Documentation & Standards
@@ -141,11 +106,11 @@ Architecture Decision Records capture important architectural decisions along wi
 | ADR | Title | Summary |
 |-----|-------|---------|
 | [004](004-agents-md-standard-investigation.md) | agents.md Standard Investigation | Investigated and rejected agents.md standard in favor of tool-specific standards (CLAUDE.md, copilot-instructions.md) |
+| [006](006-cli-argument-parsing-library.md) | CLI Argument Parsing Library | Keep yargs for config parsing rather than adding CLI subcommands |
 | [025](025-config-option-naming-convention.md) | Configuration Option Naming Convention | Nesting criteria, positive naming, and the resolved flat-to-nested rename mapping for configuration options |
 | [029](029-config-schema-single-source-of-truth.md) | Configuration Schema as Single Source of Truth | One-schema-three-consumers thesis: `app/config/options.js` feeds the generated docs, the docs explorer, and startup validation |
 
 **Key Outcomes:**
-- Consolidated instruction files (removed 28% duplication)
 - Centralized markdown standards in contributing.md
 - Maintained tool-specific official standards
 - Configuration option naming convention and rename mapping owned by ADR-025
@@ -155,71 +120,31 @@ Architecture Decision Records capture important architectural decisions along wi
 
 | ADR | Title | Summary |
 |-----|-------|---------|
-| [005](005-ai-powered-changelog-generation.md) | AI-Powered Changelog Generation | Use Gemini 2.0 Flash for automated changelog generation with release-pr workflow |
-| [017](017-workflow-run-pr-comments.md) | Use workflow_run for PR Artifact Comments | Move PR artifact commenting to a workflow_run-triggered workflow to support fork PRs |
-| [018](018-issue-triage-bot-github-app-migration.md) | Issue Triage Bot GitHub App Migration | Migrate triage bot from in-repo GitHub Actions to standalone Go service as a GitHub App |
 | [023](023-release-automation-tooling.md) | Release Automation Tooling | Adopt release-please for conventional-commit driven versioning, rejecting release-it and Beads |
 
 **Key Outcomes:**
 - Decoupled merging from releasing
-- AI-generated concise changelog entries (60 chars avg vs 165 manual)
-- Quality score: 9.0/10 on validation testing
-- Zero cost (uses Gemini API free tier)
-- Fork PRs receive artifact download comments without 403 permission errors
-- Issue triage bot runs as a standalone GitHub App with one-click installation and no in-repo workflow files
-
-### Community & Metrics
-
-| ADR | Title | Summary |
-|-----|-------|---------|
-| [019](019-repo-activity-dashboard.md) | Repository Activity Dashboard | Use Repobeats for embeddable repo activity visualization in README and docs |
-
-**Key Outcomes:**
-- Repobeats SVG embed added to project README for at-a-glance activity stats
-- Zero maintenance: hosted service updates automatically
-- No CI/CD cost or GitHub Actions minutes consumed
-
-### MQTT & Integration
-
-| ADR | Title | Summary |
-|-----|-------|---------|
-| [006](006-cli-argument-parsing-library.md) | CLI Argument Parsing Library | Keep yargs for config parsing, use MQTT for action commands instead of CLI subcommands |
-| [007](007-embedded-mqtt-broker.md) | Embedded MQTT Broker | Rejected bundling Aedes broker - users still need client tools, better alternatives exist |
-
-**Key Outcomes:**
-- Avoid fragile CLI argument bypass layer
-- MQTT commands provide clean architecture for external triggers
-- Users provide own MQTT broker (localhost or Home Assistant)
-- Consider HTTP server for zero-dependency alternative (future)
+- Changelog derived directly from conventional commits
 
 ### UI Features
 
 | ADR | Title | Summary |
 |-----|-------|---------|
-| [010](010-multiple-windows-support.md) | Multiple Windows Support | Rejected multi-window due to Teams architecture constraints |
-| [014](014-quick-chat-deep-link-approach.md) | Quick Chat Deep Link Approach | Use People API + Deep Links for quick chat access after Chat API was blocked |
-| [015](015-quick-chat-inline-messaging.md) | Quick Chat Inline Messaging | Hybrid Teams commanding + Graph API approach for inline message sending |
 | [020](020-multi-account-profile-switcher.md) | Multi-Account Profile Switcher | WebContentsView-based profile switching with feature-flag gating |
 | [022](022-custom-notification-toast-scope.md) | Custom Notification Toast Scope | Keep the opt-in custom toast, drop the Phase 2 notification centre as unverifiable |
 
 **Key Outcomes:**
-- Quick chat access via People API (works) instead of Chat API (blocked 403)
-- Inline message sending via Graph API ChatMessage.Send scope
-- Chat resolution via Teams entityCommanding + DOM scanning + member verification
-- Keyboard shortcut toggles quick chat modal
-- Multi-account profile switcher shipped Phase 1 from v2.9.0; Phase 2 in progress
+- Multiple accounts in one window with warm sessions, opt-in via `multiAccount.enabled`
+- Daemon-independent notification toast, opt-in via `notificationMethod: "custom"`
 
 ### Distribution & Packaging
 
 | ADR | Title | Summary |
 |-----|-------|---------|
-| [011](011-appimage-update-info.md) | AppImage Update Info | Post-process AppImages with appimagetool to embed update info for third-party update managers |
+| [011](011-appimage-update-info.md) | AppImage Update Info | Post-processing AppImages with appimagetool, superseded by electron-updater auto-update |
 
 **Key Outcomes:**
-- Third-party tools (Gear Lever, AppImageUpdate) can detect and manage updates
-- Delta updates via `.zsync` files reduce bandwidth
-- Both electron-updater and AppImage update info coexist
-- Adds ~2-3 minutes to CI build time
+- AppImage builds update in-app via electron-updater
 
 ## Creating New ADRs
 
@@ -234,14 +159,14 @@ Create an ADR for decisions that:
 
 ### ADR Template
 
-Use this template for new ADRs (save as `docs-site/docs/development/adr/00X-your-title.md`):
+Use this template for new ADRs (save as `docs-site/docs/development/adr/0XX-your-title.md`, continuing from the highest existing number, and add it to `docs-site/sidebars.ts`):
 
 ```markdown
 ---
-id: 00X-your-title
+id: 0XX-your-title
 ---
 
-# ADR 00X: [Title - Short Noun Phrase]
+# ADR 0XX: [Title - Short Noun Phrase]
 
 ## Status
 
@@ -302,20 +227,20 @@ What other options did we evaluate and why were they not chosen?
 
 ### ADR Naming Conventions
 
-- **Number**: Sequential (001, 002, 003, ...)
+- **Number**: Sequential (032, 033, ...)
 - **Title**: Short, descriptive noun phrase
-- **Filename**: `00X-lowercase-with-hyphens.md`
+- **Filename**: `0XX-lowercase-with-hyphens.md`
 
 **Examples:**
-- ✅ `001-desktopcapturer-source-id-format.md`
-- ✅ `002-token-cache-secure-storage.md`
-- ❌ `001-screen-sharing-bug-fix.md` (too vague)
-- ❌ `001-ImplementDesktopCapturerFix.md` (wrong case)
+- ✅ `013-pii-log-sanitization.md`
+- ✅ `021-webauthn-fido2-linux.md`
+- ❌ `032-login-bug-fix.md` (too vague)
+- ❌ `032-ImplementLoginFix.md` (wrong case)
 
 ### ADR Workflow
 
 1. **Create draft ADR** with "Proposed" status
-2. **Discuss with maintainers** (GitHub discussion or PR)
+2. **Discuss with maintainers** (GitHub issue or PR)
 3. **Update status** to "Accepted" or "Rejected" based on outcome
 4. **Implement** (if accepted)
 5. **Update status** to "Implemented" when deployed
@@ -342,10 +267,10 @@ When replacing an old decision:
 ```markdown
 ## Status
 
-~~Accepted~~ → Superseded by [ADR-008](008-new-approach.md)
+~~Accepted~~ → Superseded by [ADR-032](032-new-approach.md)
 
-**Note**: This approach was replaced in November 2025 due to [reason].
-See ADR-008 for the current implementation.
+**Note**: This approach was replaced in October 2026 due to [reason].
+See ADR-032 for the current implementation.
 ```
 
 ## Best Practices
@@ -376,21 +301,20 @@ See ADR-008 for the current implementation.
 When referencing code in ADRs:
 
 ```markdown
-**Implementation**: `app/browser/tools/tokenCache.js`
-**Configuration**: See `config.json` → `tokenRefreshInterval`
-**IPC Channel**: `token-refresh:trigger`
+**Implementation**: `app/utils/logSanitizer.js`
+**Configuration**: See `config.json` → `auth.webauthn.enabled`
+**IPC Channel**: `webauthn:create`
 ```
 
 ## ADR Statistics
 
-- **Total ADRs**: 30
-- **Implemented**: 19
+- **Total ADRs**: 16
+- **Implemented**: 9
 - **Accepted**: 4
 - **Proposed**: 0
-- **Rejected**: 5
-- **Superseded**: 2
-- **Average length**: ~1050 words
-- **Topics covered**: 11 (Authentication & Security, Screen Sharing, Linux Desktop & Display Server, Testing & Quality, Performance, Documentation & Standards, Release Process & Automation, Community & Metrics, MQTT & Integration, UI Features, Distribution & Packaging)
+- **Rejected**: 2
+- **Superseded**: 1
+- **Topics covered**: 8 (Authentication & Security, Linux Desktop & Display Server, Testing & Quality, Performance, Documentation & Standards, Release Process & Automation, UI Features, Distribution & Packaging)
 
 ## Related Documentation
 

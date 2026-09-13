@@ -4,13 +4,17 @@ id: 013-pii-log-sanitization
 
 # ADR 013: PII Log Sanitization
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on. Issue and PR numbers refer to the upstream repository.
+:::
+
 ## Status
 
 Implemented
 
 ## Context
 
-The codebase has ~590 log statements across 42 files. Audit revealed HIGH-RISK PII exposure in MQTT credentials, password commands, and API endpoints. Only one file (`tokenCache.js`) had any sanitization. File logging is disabled by default, but when enabled, sensitive data could leak.
+At the time, the upstream codebase had ~590 log statements across 42 files. Audit revealed HIGH-RISK PII exposure in MQTT broker credentials, password commands, and API endpoints. Only one file (the token cache) had any sanitization. The MQTT integration and token cache have since been removed in Outlook for Linux; the MQTT URL pattern remains in the sanitizer as harmless defense in depth. File logging is disabled by default, but when enabled, sensitive data could leak.
 
 ## Decision
 

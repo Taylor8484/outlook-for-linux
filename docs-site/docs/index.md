@@ -1,26 +1,28 @@
 ---
 id: index
-title: Teams for Linux Documentation
+title: Outlook for Linux Documentation
 slug: /
 ---
 
-# Teams for Linux
+# Outlook for Linux
 
-A native Linux desktop wrapper around the Microsoft Teams web app, with the integration features the web client cannot provide on its own: system tray and notifications, custom backgrounds, screen sharing, multiple account profiles, certificate handling, Intune SSO, secure token storage, and an MQTT bridge for home automation.
+An unofficial Linux desktop wrapper around Outlook on the web (`https://outlook.office.com/mail/`), built with Electron. It adds the desktop integration the browser tab cannot provide on its own: a system tray icon with an unread badge, native notifications, global shortcuts, multiple account profiles, custom certificates and proxies, Intune SSO, security-key sign-in, and AppImage auto-updates.
 
 :::info
-Independent project, not affiliated with Microsoft. Some behaviour is constrained by what the Teams web app exposes.
+Independent project, not affiliated with or endorsed by Microsoft. Some behaviour is constrained by what the Outlook web app exposes.
 :::
+
+Outlook for Linux is based on [teams-for-linux](https://github.com/IsmaelMartinez/teams-for-linux) by Ismael Martinez and its contributors, adapted to load Outlook instead of Microsoft Teams.
 
 ## Quick start
 
-Install the package for your distribution from the [Installation guide](installation.md), then launch:
+Download a package from the [Installation guide](installation.md), then launch:
 
 ```bash
-teams-for-linux
+outlook-for-linux
 ```
 
-For a custom configuration, drop a JSON file at `~/.config/teams-for-linux/config.json`. The full schema lives in the [Configuration reference](configuration.md). A minimal example:
+For a custom configuration, drop a JSON file at `~/.config/outlook-for-linux/config.json`. The full schema lives in the [Configuration reference](configuration.md). A minimal example:
 
 ```json
 {
@@ -36,33 +38,43 @@ For a custom configuration, drop a JSON file at `~/.config/teams-for-linux/confi
 }
 ```
 
-If the app misbehaves, the [Troubleshooting guide](troubleshooting.md) covers the common cases (Wayland rendering, screen sharing, notifications, certificates).
+If the app misbehaves, the [Troubleshooting guide](troubleshooting.md) covers the common cases (Wayland rendering, notifications, sign-in, certificates).
+
+## Features
+
+- **Outlook in its own window**, with a persistent session so you stay signed in
+- **System tray icon** with an unread badge, and minimise-to-tray
+- **Notifications**, delivered through the web app, native Electron notifications, or the built-in notification toast
+- **Download notifications** when attachments finish saving
+- **Multiple accounts**, either with the in-app profile switcher or as separate isolated instances
+- **Enterprise sign-in**: Intune SSO, WebAuthn / FIDO2 security keys, client certificates with a PIN prompt, and SSO password pre-fill
+- **Custom CA certificates and proxy** support for corporate networks
+- **Global shortcuts, spellcheck, custom CSS, and zoom**
+- **AppImage auto-updater**, cache management, and a GPU info window for diagnosing rendering problems
+- **Flatpak background portal** support, so a sandboxed build can keep running in the background
+- **Hardened IPC** with channel validation, and logs sanitised of personal information
 
 ## Guides
 
 User-facing topics:
 
-- [Installation](installation.md) — package repositories and manual install for every supported distribution
-- [Configuration](configuration.md) — every option, with defaults
-- [Multiple instances](multiple-instances.md) — running separate work and personal profiles side by side
-- [Screen sharing](screen-sharing.md) — Wayland and X11 setup, including portal selection
-- [Custom backgrounds](custom-backgrounds.md) — adding your own video-call backgrounds
-- [Certificate management](certificate.md) — corporate CA bundles and proxy interception
-- [Intune SSO](intune-sso.md) — Microsoft Identity Broker integration
-- [MQTT integration](mqtt-integration.md) — publish presence and call status to a broker
-- [Troubleshooting](troubleshooting.md) — diagnostics for common Linux desktop issues
-- [Privacy & data protection](privacy.md) — what personal data the app does and does not handle
+- [Installation](installation.md): GitHub Releases packages and building from source
+- [Configuration](configuration.md): every option, with defaults
+- [Multiple instances](multiple-instances.md): running separate work and personal profiles side by side
+- [Certificate management](certificate.md): corporate CA bundles and proxy interception
+- [Intune SSO](intune-sso.md): Microsoft Identity Broker integration
+- [Troubleshooting](troubleshooting.md): diagnostics for common Linux desktop issues
+- [Privacy & data protection](privacy.md): what personal data the app does and does not handle
 
 ## Contributing
 
 If you want to fix a bug or add a feature:
 
-- [Contributing guide](development/contributing.md) — local setup, code standards, PR workflow
-- [Architecture overview](development/contributing.md#architecture-overview) — how the main and renderer processes are wired
-- [Architecture Decision Records](development/adr/README.md) — the rationale behind significant choices
-- [Release process](development/manual-release-process.md) — how versions are cut via release-please
+- [Contributing guide](development/contributing.md): local setup, code standards, PR workflow
+- [Architecture Decision Records](development/adr/README.md): the rationale behind significant choices
+- [Release process](development/manual-release-process.md): how versions are cut
 
-## Community
+## Support
 
-- [GitHub Issues](https://github.com/IsmaelMartinez/teams-for-linux/issues) — bug reports and feature requests
-- [Matrix space](https://matrix.to/#/#teams-for-linux-space:matrix.org) — chat with users and contributors
+- [GitHub Issues](https://github.com/Taylor8484/outlook-for-linux/issues): bug reports and feature requests
+- [GitHub Releases](https://github.com/Taylor8484/outlook-for-linux/releases): downloads and changelogs

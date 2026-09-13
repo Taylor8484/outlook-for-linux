@@ -1,31 +1,31 @@
 # Security Architecture & Considerations
 
-This document outlines the security architecture, design decisions, and compensating controls implemented in Teams for Linux, particularly around the DOM access requirements and security trade-offs.
+This document outlines the security architecture, design decisions, and compensating controls implemented in Outlook for Linux, particularly around the preload/DOM access requirements and the resulting security trade-offs.
 
 ## Security Context
 
 ### The DOM Access Requirement
 
-Teams for Linux requires DOM access to Microsoft Teams' React components to provide core functionality:
+Outlook for Linux runs browser tools inside the Outlook web app's page to integrate it with the desktop:
 
-- **User Status Tracking**: Monitor and sync user presence state
-- **Custom Background Integration**: Inject custom background options into Teams interface
-- **System Idle Management**: Sync system idle state with Teams presence
-- **Authentication Flow Enhancement**: Improve login experience and reduce re-authentication
+- **Unread Count and Tray Badge**: Read the page title / DOM to derive the unread count shown on the tray icon
+- **Notifications**: Bridge web notifications to native notifications or the custom toast
+- **Authentication Enhancements**: WebAuthn/FIDO2 interception and opt-in SSO pre-fill on Microsoft sign-in pages
+- **Keyboard Shortcuts and Zoom**: In-page shortcut handling and zoom control
 
 ### Security vs. Functionality Trade-off
 
 The application faces a fundamental security vs. functionality trade-off:
 
 **Option A: Maximum Security**
-- Enable Electron `contextIsolation` and `sandbox`
-- ❌ Breaks all DOM access functionality
-- ❌ Eliminates core application features
+- Enable Electron `contextIsolation` and `sandbox` on the main window
+- ❌ Breaks the in-page browser tools that the integrations depend on
 
 **Option B: Balanced Security** (Current Approach)
-- Disable `contextIsolation` and `sandbox` for main window
-- ✅ Restore all DOM access functionality  
-- ✅ Implement comprehensive compensating controls
+- Disable `contextIsolation` and `sandbox` for the main window only
+- ✅ Keep in-page integrations working
+- ✅ Implement compensating controls
+- ✅ Keep every app-owned secondary window fully hardened
 - ✅ Recommend system-level sandboxing
 
 ## Current Security Implementation
@@ -35,7 +35,7 @@ The application faces a fundamental security vs. functionality trade-off:
 ```javascript
 // app/mainAppWindow/browserWindowManager.js
 webPreferences: {
-  contextIsolation: false,  // Required for ReactHandler DOM access
+  contextIsolation: false,  // Required for in-page browser tools
   nodeIntegration: false,   // Secure: preload scripts don't need this
   sandbox: false,           // Required for system API access
 }
@@ -45,27 +45,9 @@ webPreferences: {
 
 ### Compensating Security Controls
 
-#### 1. Content Security Policy (CSP) Headers
+#### IPC Channel Validation
 
-**Implementation**: `app/mainAppWindow/browserWindowManager.js:59-102`
-
-```javascript
-const responseHeaders = {
-  'Content-Security-Policy': [
-    "default-src 'self' https://teams.cloud.microsoft https://teams.microsoft.com https://teams.live.com ...",
-    "script-src 'self' https://teams.cloud.microsoft https://teams.microsoft.com ...",
-    "object-src 'none';",
-    "base-uri 'self';",
-    "frame-ancestors 'none';"
-  ]
-};
-```
-
-**Protection**: Prevents malicious script injection and restricts resource loading to trusted domains.
-
-#### 2. IPC Channel Validation
-
-**Implementation**: `app/security/ipcValidator.js`
+**Implementation**: `app/security/ipcValidator.js` and `app/security/ipcSecurity.js`
 
 **Features**:
 - **Channel Allowlisting**: Only legitimate IPC channels are permitted
@@ -84,38 +66,26 @@ function validateIpcChannel(channel, payload = null) {
 }
 ```
 
-#### 3. Domain Validation
+#### Origin Allowlists for Sensitive Features
 
-**Implementation**: `app/browser/tools/reactHandler.js:142-157`
+Features that act on credentials only run against known sign-in origins:
 
-```javascript
-_isAllowedTeamsDomain(hostname) {
-  const allowedDomains = [
-    'teams.cloud.microsoft',
-    'teams.microsoft.com',
-    'teams.live.com'
-  ];
-  
-  // Prevents subdomain hijacking attacks
-  for (const domain of allowedDomains) {
-    if (hostname === domain) return true;
-    if (hostname.endsWith('.' + domain)) return true;
-  }
-  return false;
-}
-```
+- **WebAuthn / FIDO2** (`app/webauthn/`): requests are validated against the Microsoft login allowlist (`login.microsoftonline.com`, `login.microsoft.com`, `login.live.com`), extendable via `auth.webauthn.extraOrigins`
+- **SSO password pre-fill** (`app/ssoPasswordPrefill/`): only runs on Microsoft/federated login hosts, extendable via `auth.webLogin.extraHosts`
 
-**Protection**: Restricts DOM access to legitimate Teams domains only, preventing access from malicious sites.
+**Protection**: Prevents an arbitrary page loaded in the window from triggering credential flows.
 
-#### 4. Screen Sharing Isolation
+#### Hardened Secondary Windows
 
-**Security Model**: Screen sharing windows maintain full security isolation:
-- `contextIsolation: true`
-- `sandbox: true` 
-- No DOM access requirements
-- Separate security context
+App-owned windows that do not need access to the Outlook page run with full isolation (`contextIsolation: true`, `sandbox: true` where supported, `nodeIntegration: false`):
 
-#### 5. Process Error Handlers
+- Secure prompts for PINs and passwords (`app/_shared/securePrompt.js`, WebAuthn PIN dialog)
+- Profile dialogs (`app/_shared/createDialogWindow.js`)
+- Custom notification toasts (`app/notificationSystem/`)
+
+Secrets such as smartcard or security-key PINs are collected in these windows and never enter the Outlook renderer ([ADR-021](adr/021-webauthn-fido2-linux.md), [ADR-024](adr/024-smartcard-pkcs11-pin-dialog.md)).
+
+#### Process Error Handlers
 
 **Implementation**: `app/index.js` (top-level)
 
@@ -126,34 +96,28 @@ _isAllowedTeamsDomain(hostname) {
 
 **Protection**: Prevents silent process termination and provides diagnostic output for crash reports.
 
-#### 6. Input Sanitization for External Commands
+#### Input Sanitization for External Commands
 
 **Implementation**: `app/mainAppWindow/browserWindowManager.js`
 
 **Features**:
-- **`sanitizeCommandArg()`**: Validates string type, limits length to 500 characters, strips control characters
-- Applied to all incoming call notification arguments (`caller`, `text`, `image`) before passing to `spawn()`
+- **`sanitizeCommandArg()`**: Validates string type, limits length to 500 characters, strips control characters before values are passed to `spawn()`
 
-**Protection**: Defense-in-depth against edge cases in user-configured notification commands receiving untrusted data from Teams messages.
+**Protection**: Defense-in-depth against edge cases in user-configured commands receiving untrusted data from the web app.
+
+#### Log Sanitization
+
+**Implementation**: `app/utils/logSanitizer.js`, hooked into electron-log by `app/config/logger.js`
+
+Tokens, passwords, emails, IP addresses, URL query parameters and user paths are redacted from all log output ([ADR-013](adr/013-pii-log-sanitization.md)).
 
 ## Recommended User-Level Security
 
 ### System-Level Sandboxing
 
-Instead of relying solely on Electron security features, users should adopt **system-level sandboxing**:
+Instead of relying solely on Electron security features, users can adopt **system-level sandboxing**:
 
 #### Available Options
-
-**Flatpak**
-- Built-in application isolation
-- Available via Flathub
-- Automatic permission management
-- Filesystem access restrictions
-
-**Snap Packages**
-- Application confinement system
-- Auto-updates with security patches
-- Interface-based permission system
 
 **AppArmor/SELinux**
 - Available by default on most Linux distributions
@@ -163,131 +127,59 @@ Instead of relying solely on Electron security features, users should adopt **sy
 **Manual Sandboxing Tools**
 - `firejail`: User-space sandboxing
 - `bubblewrap`: Container-based isolation
-- Custom chroot environments
 
 #### Why System-Level > Application-Level
 
-1. **Preserves Functionality**: DOM access remains intact
-2. **Better Security**: OS-level controls more robust than Electron sandbox
+1. **Preserves Functionality**: In-page integrations remain intact
+2. **Better Security**: OS-level controls are more robust than the Electron sandbox
 3. **User Choice**: Flexible security levels based on individual needs
-4. **Future-Proof**: Works regardless of Teams/React changes
-5. **Defense in Depth**: Additional security layer independent of application
+4. **Future-Proof**: Works regardless of changes to the Outlook web app
+5. **Defense in Depth**: Additional security layer independent of the application
 
-## Security Monitoring & Maintenance
+## Session and Credential Storage
 
-### React Version Monitoring
-
-**Implementation**: Automatic React version detection in `app/browser/tools/reactHandler.js`
-
-```javascript
-_detectAndLogReactVersion() {
-  const { version, method } = this._detectReactVersion();
-  console.debug(`ReactHandler: React version detected: ${version} (via ${method})`);
-}
-```
-
-**Purpose**: Monitor Teams React version updates that could break DOM access functionality.
+Outlook for Linux does not extract or store authentication tokens itself. Cookies, local storage and IndexedDB belong to the Electron session partition (`persist:outlook-4-linux`, plus one partition per profile when multi-account is enabled) and are managed by Chromium. "Quit (Clear Storage)" and `storage.clearData` clear every profile partition.
 
 ## Future Security Enhancements
 
-### Token Storage Security (Implemented v2.5.9)
-
-**Token Cache Secure Storage Implementation**:
-- **OS-Level Encryption**: Authentication tokens encrypted using Electron `safeStorage` API
-- **Platform-Native Security**: Leverages Keychain (macOS), DPAPI (Windows), kwallet/gnome (Linux)
-- **Graceful Fallback**: Automatic fallback to localStorage if secure storage unavailable
-- **Migration Safety**: One-time migration from localStorage to secure storage with no data loss
-- **PII Protection**: All logging sanitizes personally identifiable information
-
-**Security Benefits**:
-```mermaid
-graph TB
-    A[Teams Authentication Tokens] --> B[Secure Storage Layer]
-    
-    subgraph "Platform Security"
-        B --> C[macOS Keychain<br/>High Security]
-        B --> D[Windows DPAPI<br/>Medium Security]
-        B --> E[Linux kwallet/gnome<br/>Variable Security]
-    end
-    
-    subgraph "Fallback Chain"
-        B --> F[localStorage Fallback]
-        F --> G[Memory Emergency Fallback]
-    end
-```
-
-**Risk Mitigation**:
-- ✅ Tokens encrypted at rest using OS cryptographic APIs
-- ✅ Application-specific access control
-- ✅ No plain text token storage (when secure storage available)
-- ✅ Automatic migration preserves existing authentication
-- ⚠️ Variable security on Linux (depends on desktop environment)
-- ⚠️ Fallback to localStorage when secure storage unavailable
-
-### Phase 2: API Integration Security
-
-**Future Planned Security Improvements**:
-- **OAuth 2.0 Integration**: Secure Microsoft Graph authentication
-- **Permission Scoping**: Minimal required API permissions  
-- **Rate Limiting**: API abuse prevention
-
-**Timeline**: Future consideration based on user needs
-
 ### Long-term Security Goals
 
-1. **Progressive Hardening**: Gradual restoration of Electron security features as API migration completes
-2. **Zero-Trust Architecture**: Assume all external inputs are malicious  
+1. **Progressive Hardening**: Restore Electron security features where the in-page integrations allow it
+2. **Zero-Trust Architecture**: Assume all external inputs are malicious
 3. **Automated Security Testing**: Integration of security tests in CI/CD
-4. **Security Documentation**: Comprehensive security guide for developers
+4. **Sender Checks**: Validate `event.sender` for sensitive IPC handlers in addition to the channel allowlist
 
 ## Risk Assessment
 
 ### Current Risk Level: LOW
 
-**Real-World Security Assessment**:
-
 **Effective Security Controls**:
-- ✅ **System-Level Sandboxing**: Modern OS distributions enforce application sandboxing by default (Flatpak, Snap, AppArmor, SELinux)
-- ✅ **Microsoft's Infrastructure Security**: Teams web app runs on Microsoft's secured infrastructure with their security controls
-- ✅ **Domain Restrictions**: Application limited to Teams domains only, not arbitrary web content
-- ✅ **Node.js Access Prevented**: `nodeIntegration: false` maintains critical security boundary
-- ✅ **Comprehensive IPC Validation**: Channel allowlisting and payload sanitization
-- ✅ **Token Encryption**: Authentication tokens encrypted at rest using OS-level security
+- ✅ **Microsoft's Infrastructure Security**: Outlook on the web runs on Microsoft's secured infrastructure with their security controls
+- ✅ **Node.js Access Prevented**: `nodeIntegration: false` maintains a critical security boundary
+- ✅ **IPC Validation**: Channel allowlisting and payload sanitization
+- ✅ **Hardened Secret Input**: PINs and passwords never enter the web app renderer
+- ✅ **PII-Safe Logging**: Sensitive values redacted before logs are written
 
 **Technical Trade-offs** (Mitigated by Above):
-- ⚠️ Electron context isolation disabled for DOM access functionality
-- ⚠️ Electron sandbox disabled for system integration features
+- ⚠️ Electron context isolation disabled on the main window for in-page integrations
+- ⚠️ Electron sandbox disabled on the main window for system integration features
 
-**Assessment**: The combination of modern OS-level sandboxing, Microsoft's web app security controls, comprehensive compensating measures, and proven operational history results in a low-risk security posture. The disabled Electron features are effectively compensated by system-level protections that are now standard across all major platforms.
+**Assessment**: The combination of Microsoft's web app security controls, compensating measures, and optional OS-level sandboxing results in a low-risk security posture.
 
 ### Continued Security Best Practices
 
 **For Users**:
-- Use official package repositories (Flatpak, Snap, distribution packages) when available
-- Keep the application updated through your package manager
+- Download releases only from [GitHub Releases](https://github.com/Taylor8484/outlook-for-linux/releases)
+- Keep the application updated (AppImage builds update in-app)
 - Follow your distribution's security recommendations
 
 **For Developers**:
-- Continue monitoring Teams web app changes that could affect security
-- Maintain IPC channel validation and domain restrictions
+- Monitor Outlook web app changes that could affect the in-page integrations
+- Maintain IPC channel validation and origin allowlists
 - Keep dependencies updated and monitor security advisories
-
-### Security Architecture Benefits
-
-**Why This Approach Works**:
-- **Layered Security**: System-level sandboxing + application controls + Microsoft's security
-- **Transparent Trade-offs**: Clear documentation of technical decisions and mitigations
-- **Future-Compatible**: Architecture supports progressive enhancement as APIs become available
-
-The current security posture represents an acceptable risk because:
-
-1. **Compensating Controls**: Multiple security layers implemented
-2. **User Choice**: System-level sandboxing available
-3. **Community Benefit**: Preserves functionality for thousands of users
-4. **Open Source**: Transparent implementation for security review
 
 ## Security Contact & Reporting
 
-**Security Issues**: Report via GitHub Security Advisories  
-**Security Questions**: GitHub Discussions security category  
+**Security Issues**: Report via [GitHub Security Advisories](https://github.com/Taylor8484/outlook-for-linux/security/advisories)
+**Security Questions**: [GitHub Issues](https://github.com/Taylor8484/outlook-for-linux/issues)
 **Emergency Contact**: Project maintainer via GitHub

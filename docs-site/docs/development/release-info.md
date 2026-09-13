@@ -10,8 +10,8 @@ For the complete release process (including changelog generation and release PRs
 
 The `generate-release-info` script:
 
-1. **Validates version consistency** across `package.json`, `package-lock.json`, and `com.github.IsmaelMartinez.teams_for_linux.appdata.xml`
-2. **Extracts release notes** from the `com.github.IsmaelMartinez.teams_for_linux.appdata.xml` file
+1. **Validates version consistency** across `package.json`, `package-lock.json`, and `io.github.taylor8484.outlook_for_linux.appdata.xml`
+2. **Extracts release notes** from the `io.github.taylor8484.outlook_for_linux.appdata.xml` file
 3. **Generates a `release-info.json`** file conforming to [electron-builder's ReleaseInfo interface](https://www.electron.build/app-builder-lib.interface.releaseinfo)
 4. **Makes release info available** for Linux publishing to GitHub
 
@@ -65,13 +65,13 @@ npm run dist
 
 ```
 project/
-├── package.json                           # Contains version and build config
-├── package-lock.json                      # Version consistency check
-├── com.github.IsmaelMartinez.teams_for_linux.appdata.xml  # Source of release notes
-├── release-info.json                      # Generated release info (dev)
+├── package.json                                        # Contains version and build config
+├── package-lock.json                                   # Version consistency check
+├── io.github.taylor8484.outlook_for_linux.appdata.xml  # Source of release notes
+├── release-info.json                                   # Generated release info (dev)
 ├── scripts/
-│   ├── generateReleaseInfo.js             # Release info generator
-│   └── afterpack.js                       # Build hook integration
+│   ├── generateReleaseInfo.js                          # Release info generator
+│   └── afterpack.js                                    # Build hook integration
 ```
 
 ## Configuration
@@ -149,7 +149,7 @@ The system performs validation and provides helpful error messages:
 ### Manual Generation
 
 ```bash
-cd /path/to/teams-for-linux
+cd /path/to/outlook-for-linux
 npm run generate-release-info
 ```
 
@@ -159,17 +159,17 @@ npm run generate-release-info
 ✅ Version consistency check passed!
    package.json: 2.0.16
    package-lock.json: 2.0.16
-   com.github.IsmaelMartinez.teams_for_linux.appdata.xml: 2.0.16 (with release notes)
+   io.github.taylor8484.outlook_for_linux.appdata.xml: 2.0.16 (with release notes)
 
 📋 Generated Release Info (electron-builder ReleaseInfo interface):
 
 {
   "releaseName": "2.0.16",
-  "releaseNotes": "• Added a reimplementation of the call events to revive the incoming call scripts\n• Added an incoming call toast just like the one from the discontinued Linux Teams App from Microsoft",
+  "releaseNotes": "• Added feature A\n• Fixed bug B",
   "releaseDate": "2025-06-05"
 }
 
-💾 Release info saved to: /path/to/teams-for-linux/release-info.json
+💾 Release info saved to: /path/to/outlook-for-linux/release-info.json
 ```
 
 ### Build Integration
@@ -189,10 +189,7 @@ For automated releases in GitHub Actions:
   run: npm run generate-release-info
 
 - name: Build Application
-  run: npm run dist
-
-- name: Publish Release
-  run: npm run publish
+  run: npm run dist:linux:x64
 ```
 
 ## Advanced Configuration
@@ -206,16 +203,15 @@ You can customize the release notes extraction by modifying the `generateRelease
 - Include commit information
 - Generate changelogs from git history
 
-### Multi-Platform Releases
+### Multi-Architecture Releases
 
-For cross-platform releases, ensure:
+For multi-architecture releases (x64, arm64, armv7l), ensure:
 
-- Version consistency across all platforms
-- Platform-specific release notes if needed
+- Version consistency across all builds
 - Proper artifact naming and organization
 
 ## Related Documentation
 
 - [Manual Release Process](manual-release-process.md) - Complete release workflow
-- [ADR 005: AI-Powered Changelog Generation](adr/005-ai-powered-changelog-generation.md) - Changelog automation
+- [ADR 023: Release Automation Tooling](adr/023-release-automation-tooling.md) - Changelog and release automation
 - [IPC API](ipc-api.md) - Integration with application features

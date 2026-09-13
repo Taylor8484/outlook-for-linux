@@ -4,6 +4,10 @@ id: 004-agents-md-standard-investigation
 
 # ADR 004: agents.md Standard Investigation and Rejection
 
+:::note Inherited decision
+This ADR was written in teams-for-linux, the project Outlook for Linux is based on, and still describes how this repository's AI assistant instruction files are organised.
+:::
+
 ## Status
 
 Rejected
@@ -69,7 +73,7 @@ Instead of adopting agents.md, we implemented a consolidation strategy:
 
 3. **Establish clear documentation hierarchy:**
    - Local markdown files in `docs-site/docs/` are the source of truth
-   - Web URLs (https://ismaelmartinez.github.io/teams-for-linux/) are for human reference only
+   - Web URLs (https://taylor8484.github.io/outlook-for-linux/) are for human reference only
    - AI agents should read local files, not fetch from web
 
 ## Consequences
@@ -124,7 +128,7 @@ Instead of adopting agents.md, we implemented a consolidation strategy:
 
 The consolidation was successfully implemented with the following changes:
 
-1. **Added Markdown Standards to contributing.md** (`docs-site/docs/development/contributing.md:207-265`)
+1. **Added Markdown Standards to contributing.md** (`docs-site/docs/development/contributing.md`)
    - Comprehensive markdown standards section
    - Covers: content structure, callouts, code blocks, tables, links, diagrams
    - Clearly states it applies to ALL markdown files in the project

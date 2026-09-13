@@ -2,16 +2,16 @@
 title: "Module Index"
 sidebar_position: 4
 type: reference
-last_updated: 2026-05-26
+last_updated: 2026-09-13
 tags: [architecture, modules, reference]
 ---
 
 # Module Architecture Index
 
-Comprehensive index of all application modules in the `app/` directory. Teams for Linux follows a modular architecture where functionality is organized into focused, single-responsibility modules.
+Comprehensive index of all application modules in the `app/` directory. Outlook for Linux follows a modular architecture where functionality is organized into focused, single-responsibility modules.
 
 :::tip
-All module READMEs are available in the GitHub repository. Click the documentation links to view detailed information about each module.
+Module READMEs are available in the GitHub repository. Click the documentation links to view detailed information about each module.
 :::
 
 ## Core Modules
@@ -20,10 +20,10 @@ These modules form the foundation of the application and are essential for basic
 
 | Module | Path | Purpose | Documentation |
 |--------|------|---------|---------------|
-| **Startup** | `app/startup/` | Command line switches & initialization flags | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/startup/README.md) |
-| **Main App Window** | `app/mainAppWindow/` | Primary BrowserWindow that hosts Teams web interface | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/mainAppWindow/README.md) |
-| **App Configuration** | `app/appConfiguration/` | Application-wide configuration management | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/appConfiguration/README.md) |
-| **Browser** | `app/browser/` | Preload scripts & client-side injected scripts | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/browser/README.md) |
+| **Startup** | `app/startup/` | Command line switches & initialization flags | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/startup/README.md) |
+| **Main App Window** | `app/mainAppWindow/` | Primary BrowserWindow that hosts the Outlook web app | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/mainAppWindow/README.md) |
+| **App Configuration** | `app/appConfiguration/` | Application-wide configuration management | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/appConfiguration/README.md) |
+| **Browser** | `app/browser/` | Preload script & client-side browser tools (tray icon rendering, title-based unread detection, shortcuts, zoom, WebAuthn override, platform emulation) | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/browser/README.md) |
 
 ## Feature Modules
 
@@ -31,25 +31,18 @@ User-facing features and integrations.
 
 | Module | Path | Purpose | Documentation |
 |--------|------|---------|---------------|
-| **Auto Updater** | `app/autoUpdater/` | In-app auto-update for AppImage distributions | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/autoUpdater/README.md) |
-| **MQTT** | `app/mqtt/` | MQTT broker integration for status publishing, media state (microphone, camera, in-call, screen-sharing), and Home Assistant auto-discovery | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/mqtt/README.md), [User Guide](../mqtt-integration.md) |
-| **Screen Sharing** | `app/screenSharing/` | Native screen/window selection and preview | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/screenSharing/README.md), [User Guide](../screen-sharing.md) |
-| **Custom Background** | `app/customBackground/` | Virtual background management | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/customBackground/README.md), [User Guide](../custom-backgrounds.md) |
-| **Custom CSS** | `app/customCSS/` | Custom styling and themes | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/customCSS/README.md) |
-| **Notifications** | `app/notifications/` | Native desktop notifications & sound playback | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/notifications/README.md) |
-| **Notification System** | `app/notificationSystem/` | Custom in-app toast notifications | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/notificationSystem/README.md) |
-| **Incoming Call Toast** | `app/incomingCallToast/` | Call notification toasts | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/incomingCallToast/README.md) |
-| **Download Manager** | `app/downloadManager/` | Surfaces file download lifecycle as system notifications ([#2512](https://github.com/IsmaelMartinez/teams-for-linux/issues/2512)) | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/downloadManager/README.md) |
-| **InTune SSO** | `app/intune/` | Microsoft InTune single sign-on integration | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/intune/README.md), [User Guide](../intune-sso.md) |
+| **Auto Updater** | `app/autoUpdater/` | In-app auto-update for AppImage distributions | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/autoUpdater/README.md) |
+| **Custom CSS** | `app/customCSS/` | Custom styling and themes | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/customCSS/README.md) |
+| **Notifications** | `app/notifications/` | Native desktop notifications & sound playback | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/notifications/README.md) |
+| **Notification System** | `app/notificationSystem/` | Custom in-app toast notifications | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/notificationSystem/README.md), [ADR-022](./adr/022-custom-notification-toast-scope.md) |
+| **Download Manager** | `app/downloadManager/` | Surfaces file download lifecycle as system notifications | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/downloadManager/README.md) |
+| **InTune SSO** | `app/intune/` | Microsoft InTune single sign-on integration | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/intune/README.md), [User Guide](../intune-sso.md) |
 | **Global Shortcuts** | `app/globalShortcuts/` | System-wide keyboard shortcuts | No README yet |
-| **Graph API** | `app/graphApi/` | Microsoft Graph API integration for calendar and mail | [ADR-030](./adr/030-graph-api-teams-session-token.md), [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/graphApi/README.md) |
-| **Speaking Indicator** | `app/browser/tools/speakingIndicator.js` | Visual overlay showing microphone state during calls (speaking/silent/muted) via RTCPeerConnection.getStats(). Also provides WebRTC-based call state fallback for reliable MQTT in-call detection ([#2358](https://github.com/IsmaelMartinez/teams-for-linux/issues/2358)). | [PR #2299](https://github.com/IsmaelMartinez/teams-for-linux/pull/2299) |
-| **Quick Chat** | `app/quickChat/` | Quick Chat modal with People API search and inline messaging via Graph API | [ADR-014](./adr/014-quick-chat-deep-link-approach.md), [ADR-015](./adr/015-quick-chat-inline-messaging.md) |
-| **WebAuthn / FIDO2** | `app/webauthn/` | Hardware security key support for Linux via fido2-tools interception of navigator.credentials | [ADR-021](./adr/021-webauthn-fido2-linux.md) |
-| **Client Certificate PIN** | `app/clientCertificate/` | Linux smartcard/NSS client-certificate PIN dialog built on the shared secure prompt ([#2639](https://github.com/IsmaelMartinez/teams-for-linux/issues/2639)) | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/clientCertificate/README.md) |
-| **Profiles Manager** | `app/profilesManager/` | Multi-account profile storage, switching, and lifecycle management | [ADR-020](./adr/020-multi-account-profile-switcher.md) |
+| **WebAuthn / FIDO2** | `app/webauthn/` | Hardware security key support for Linux via fido2-tools interception of navigator.credentials | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/webauthn/README.md), [ADR-021](./adr/021-webauthn-fido2-linux.md) |
+| **Client Certificate PIN** | `app/clientCertificate/` | Linux smartcard/NSS client-certificate PIN dialog built on the shared secure prompt | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/clientCertificate/README.md), [ADR-024](./adr/024-smartcard-pkcs11-pin-dialog.md) |
+| **Profiles Manager** | `app/profilesManager/` | Multi-account profile storage, switching, and lifecycle management | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/profilesManager/README.md), [ADR-020](./adr/020-multi-account-profile-switcher.md) |
 | **Profile Dialogs** | `app/profileDialogs/` | Add-profile, manage-profiles, and switch-profile UI dialogs | [ADR-020](./adr/020-multi-account-profile-switcher.md) |
-| **Join Meeting Dialog** | `app/joinMeetingDialog/` | Join Meeting dialog for deep-link navigation handling | — |
+| **Profile Switcher** | `app/profileSwitcher/` | Avatar pill overlay for switching between profiles | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/profileSwitcher/README.md) |
 
 ## System Integration Modules
 
@@ -57,11 +50,11 @@ OS-level integrations and platform-specific functionality.
 
 | Module | Path | Purpose | Documentation |
 |--------|------|---------|---------------|
-| **Idle Monitor** | `app/idle/` | System idle state monitoring & status correlation | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/idle/README.md) |
-| **Login** | `app/login/` | Authentication and login flow management | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/login/README.md) |
-| **SSO Password Pre-fill** | `app/ssoPasswordPrefill/` | Opt-in pre-fill of the Microsoft/federated **web** sign-in form: account, password from a command, optional auto-advance and MFA method ([#2794](https://github.com/IsmaelMartinez/teams-for-linux/issues/2794)). Distinct from `app/login/`, which drives the native HTTP Basic/NTLM dialog. | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/ssoPasswordPrefill/README.md) |
-| **Menus** | `app/menus/` | Application menu bar and context menus | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/menus/README.md) |
-| **Spell Check Provider** | `app/spellCheckProvider/` | Text spelling correction integration | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/spellCheckProvider/README.md) |
+| **Login** | `app/login/` | Native HTTP Basic/NTLM login dialog handling | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/login/README.md) |
+| **SSO Password Pre-fill** | `app/ssoPasswordPrefill/` | Opt-in pre-fill of the Microsoft/federated **web** sign-in form: account, password from a command, optional auto-advance and MFA method. Distinct from `app/login/`, which drives the native HTTP Basic/NTLM dialog. | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/ssoPasswordPrefill/README.md) |
+| **Menus** | `app/menus/` | Application menu bar, tray menu and context menus | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/menus/README.md) |
+| **Spell Check Provider** | `app/spellCheckProvider/` | Text spelling correction integration | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/spellCheckProvider/README.md) |
+| **Background Portal** | `app/backgroundPortal/` | Flatpak background-running request and status reporting via `org.freedesktop.portal.Background` | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/backgroundPortal/README.md) |
 
 ## Utility & Infrastructure Modules
 
@@ -69,15 +62,15 @@ Supporting infrastructure, utilities, and cross-cutting concerns.
 
 | Module | Path | Purpose | Documentation |
 |--------|------|---------|---------------|
-| **Shared** | `app/_shared/` | Cross-module shared utilities and constants | — |
-| **Audio** | `app/audio/` | Sound playback via system audio commands (`paplay`, `aplay`, `afplay`) | — |
-| **Utils** | `app/utils/` | Shared utilities (window positioning, log sanitization) | — |
-| **Helpers** | `app/helpers/` | Shared utility functions and common logic | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/helpers/README.md) |
-| **Cache Manager** | `app/cacheManager/` | Application cache handling | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/cacheManager/README.md) |
-| **Config** | `app/config/` | Configuration file loading and parsing | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/config/README.md) |
-| **Connection Manager** | `app/connectionManager/` | Network connectivity and connection state | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/connectionManager/README.md) |
-| **Partitions** | `app/partitions/` | Electron partition management for sessions | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/partitions/README.md) |
-| **Security** | `app/security/` | Security controls and validation | No README yet |
+| **Shared** | `app/_shared/` | Cross-module shared utilities, dialog window scaffolding and the hardened secure prompt | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/_shared/README.md) |
+| **Audio** | `app/audio/` | Sound playback via system audio commands (`paplay`, `pw-play`, `aplay`, `afplay`) | — |
+| **Utils** | `app/utils/` | Shared utilities (window positioning, log sanitization, storage partitions) | — |
+| **Helpers** | `app/helpers/` | Shared utility functions and common logic | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/helpers/README.md) |
+| **Cache Manager** | `app/cacheManager/` | Application cache handling | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/cacheManager/README.md) |
+| **Config** | `app/config/` | Configuration schema, file loading, parsing and validation | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/config/README.md) |
+| **Connection Manager** | `app/connectionManager/` | Network connectivity and connection state | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/connectionManager/README.md) |
+| **Partitions** | `app/partitions/` | Electron partition management for sessions | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/partitions/README.md) |
+| **Security** | `app/security/` | IPC channel validation and payload sanitization | No README yet |
 | **Certificate** | `app/certificate/` | Custom certificate handling | [User Guide](../certificate.md) |
 
 ## UI Components
@@ -86,15 +79,13 @@ Special-purpose windows and UI elements.
 
 | Module | Path | Purpose | Documentation |
 |--------|------|---------|---------------|
-| **Documentation Window** | `app/documentationWindow/` | In-app documentation viewer | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/documentationWindow/README.md) |
-| **GPU Info Window** | `app/gpuInfoWindow/` | GPU information display window | [README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/gpuInfoWindow/README.md) |
-| **Screen Picker** | `app/screenPicker/` | Screen/window selection interface | No README yet |
+| **GPU Info Window** | `app/gpuInfoWindow/` | GPU information display window | [README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/gpuInfoWindow/README.md) |
 
 ## Assets
 
 | Path | Purpose |
 |------|---------|
-| `app/assets/` | Icons, sounds, and static resources ([README](https://github.com/IsmaelMartinez/teams-for-linux/blob/main/app/assets/README.md)) |
+| `app/assets/` | Icons, sounds, and static resources ([README](https://github.com/Taylor8484/outlook-for-linux/blob/develop-outlook/app/assets/README.md)) |
 
 ## Module Development Guidelines
 
@@ -122,14 +113,14 @@ app/myModule/
 ├── README.md              # Module documentation
 ├── index.js               # Public interface / entry point
 ├── service.js             # Service class (if applicable)
-├── preload.js             # Preload script (if needs IPC)
-└── tests/                 # Unit tests (future)
-    └── myModule.spec.js
+└── preload.js             # Preload script (if needs IPC)
 ```
+
+Unit tests live in `tests/unit/` and end-to-end tests in `tests/e2e/`.
 
 ### IPC Channel Guidelines
 
-- **Naming convention**: `module-name:action` (e.g., `screen-sharing:get-sources`)
+- **Naming convention**: `module-name:action` (e.g., `webauthn:create`)
 - **Add descriptive comments** above `ipcMain.handle()` or `ipcMain.on()` calls
 - **Register in allowlist**: Add to `app/security/ipcValidator.js`
 - **Generate documentation**: Run `npm run generate-ipc-docs`
@@ -149,11 +140,11 @@ graph TD
     A --> C[Main App Window]
     A --> D[App Configuration]
 
-    C --> E[Screen Sharing]
-    C --> F[Notifications]
-    C --> G[MQTT]
+    C --> E[Notifications]
+    C --> F[Menus and Tray]
+    C --> G[Profiles Manager]
 
-    E --> H[Browser/Injected Scripts]
+    E --> H[Browser Tools / Preload]
     F --> H
     G --> H
 

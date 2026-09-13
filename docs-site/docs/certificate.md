@@ -11,10 +11,10 @@ See [Configuration Documentation](configuration.md) for all available options.
 The expected fingerprints are of the form `sha256/<base64 encoded sha256sum>`.
 Tools like openssl usually deliver the sha256sum encoded in hexadecimal format.
 If you have access to the nodejs console, the fingerprint of the CA that cannot
-be validated will be printed out. You can then start teams-for-linux again with
+be validated will be printed out. You can then start outlook-for-linux again with
 
 ```bash
-teams-for-linux --customCACertsFingerprints sha256/YOUR-CERTIFICATE-FINGERPRINT [--customCACertsFingerprints ANOTHER-FINGERPRINT-IF-NEEDED]
+outlook-for-linux --customCACertsFingerprints sha256/YOUR-CERTIFICATE-FINGERPRINT [--customCACertsFingerprints ANOTHER-FINGERPRINT-IF-NEEDED]
 ```
 
 If you already have the certificate in a file locally, you can calculate the
@@ -25,7 +25,7 @@ echo sha256/$(openssl x509 -in /path/to/certificate -noout -fingerprint -sha256 
 ```
 
 To have your custom certs recognized on every run, add them to your
-`~/.config/teams-for-linux/config.json`
+`~/.config/outlook-for-linux/config.json`
 
 ```json
 {
@@ -71,7 +71,7 @@ If you already have the CA certificate as a file, skip to the import in step 4 a
 
 ```bash
 # 1. Capture the chain (any HTTPS host works)
-openssl s_client -connect teams.cloud.microsoft:443 -servername teams.cloud.microsoft \
+openssl s_client -connect outlook.office.com:443 -servername outlook.office.com \
   -showcerts </dev/null 2>/dev/null > raw.txt
 
 # 2. Split it into individual PEM files
@@ -90,7 +90,7 @@ which is the minimum this needs. An intermediate is imported with `,,` so it can
 build the chain without itself becoming a trust anchor. Avoid broader flags such as `CT,C,C`,
 which would additionally trust the certificate for email and object signing.
 
-Restart Teams for Linux afterwards. You can confirm what is trusted with
+Restart Outlook for Linux afterwards. You can confirm what is trusted with
 `certutil -d sql:$HOME/.pki/nssdb -L`.
 
 Importing the intermediate as well as the root matters when the proxy serves an incomplete
@@ -106,19 +106,13 @@ the commands above work: `certutil` creates it, and the app then uses it on the 
 On a profile where `~/.pki/nssdb` was never created, the app reads the newer location, so
 adjust the `-d sql:` path if you want to import there instead.
 
-#### Confined packages
+#### Sandboxed packages
 
-Snap and Flatpak remap `HOME`, so the database lives inside the app's own directory. Both
-candidate paths above still apply, just relative to the remapped home:
-
-*   **Snap:** `~/snap/teams-for-linux/current/.pki/nssdb`, or
-    `~/snap/teams-for-linux/current/.local/share/pki/nssdb`
-*   **Flatpak:** `~/.var/app/com.github.IsmaelMartinez.teams_for_linux/.pki/nssdb`, or
-    `~/.var/app/com.github.IsmaelMartinez.teams_for_linux/data/pki/nssdb`
-
-The config file is remapped the same way, which is a common reason
-`customCACertsFingerprints` looks like it is being ignored on these packages. See
-[Configuration](configuration.md) for the config locations.
+If you run the app inside a sandbox that remaps `HOME` (for example a locally built Flatpak),
+the NSS database and the config file both live inside the sandbox's own home directory rather
+than your real one. Both candidate database paths above still apply, relative to the remapped
+home. A remapped config location is a common reason `customCACertsFingerprints` looks like it
+is being ignored. See [Configuration](configuration.md) for the config locations.
 
 ## Corporate Certificate Scenarios
 
@@ -128,7 +122,7 @@ For development or internal environments using self-signed certificates:
 
 1. **Extract the certificate fingerprint** using the command above
 2. **Add to configuration** in your config.json
-3. **Restart Teams for Linux** to apply the new certificate trust
+3. **Restart Outlook for Linux** to apply the new certificate trust
 
 ### Corporate Proxy Certificates
 
@@ -179,12 +173,12 @@ Error: certificate verify failed: unable to get local issuer certificate
 
 1. **Enable debug logging** to see certificate details:
    ```bash
-   ELECTRON_ENABLE_LOGGING=true teams-for-linux
+   ELECTRON_ENABLE_LOGGING=true outlook-for-linux
    ```
 
 2. **Check the certificate chain** with openssl:
    ```bash
-   openssl s_client -connect teams.cloud.microsoft:443 -showcerts
+   openssl s_client -connect outlook.office.com:443 -showcerts
    ```
 
 3. **Verify your fingerprint calculation** matches the expected format.
@@ -200,5 +194,5 @@ Error: certificate verify failed: unable to get local issuer certificate
 
 ## Related Documentation
 
-- [Configuration Options](configuration.md) - Complete configuration reference
-- [Troubleshooting](troubleshooting.md) - General troubleshooting guide
+- [Configuration Options](configuration.md): complete configuration reference
+- [Troubleshooting](troubleshooting.md): general troubleshooting guide

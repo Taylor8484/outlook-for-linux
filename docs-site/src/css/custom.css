@@ -4,32 +4,32 @@
  * work well for content-centric websites.
  */
 
-/* Teams for Linux custom theme colors */
+/* Outlook for Linux custom theme colors */
 :root {
-  /* Microsoft Teams purple/blue theme */
-  --ifm-color-primary: #6264a7;
-  --ifm-color-primary-dark: #585a96;
-  --ifm-color-primary-darker: #53558e;
-  --ifm-color-primary-darkest: #454675;
-  --ifm-color-primary-light: #6c6eb8;
-  --ifm-color-primary-lighter: #7173c0;
-  --ifm-color-primary-lightest: #8b8dd1;
+  /* Microsoft Outlook blue theme */
+  --ifm-color-primary: #0078d4;
+  --ifm-color-primary-dark: #006cbf;
+  --ifm-color-primary-darker: #0066b4;
+  --ifm-color-primary-darkest: #005494;
+  --ifm-color-primary-light: #0084e9;
+  --ifm-color-primary-lighter: #008af4;
+  --ifm-color-primary-lightest: #9fd2fb;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
   
-  /* Additional Teams for Linux branding */
+  /* Additional Outlook for Linux branding */
   --ifm-font-family-base: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #8b8dd1;
-  --ifm-color-primary-dark: #7779c9;
-  --ifm-color-primary-darker: #6f71c5;
-  --ifm-color-primary-darkest: #5b5db6;
-  --ifm-color-primary-light: #9f9fd9;
-  --ifm-color-primary-lighter: #a7a7dd;
-  --ifm-color-primary-lightest: #bfbfe9;
+  --ifm-color-primary: #4aa3eb;
+  --ifm-color-primary-dark: #2f95e8;
+  --ifm-color-primary-darker: #218ee7;
+  --ifm-color-primary-darkest: #125e9c;
+  --ifm-color-primary-light: #65b1ee;
+  --ifm-color-primary-lighter: #73b8ef;
+  --ifm-color-primary-lightest: #cfe6f9;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
@@ -472,7 +472,7 @@
   border-color: var(--ifm-color-emphasis-400);
 }
 
-/* Custom Mermaid theme colors to match Teams for Linux */
+/* Custom Mermaid theme colors to match Outlook for Linux */
 .mermaid .node rect,
 .mermaid .node circle,
 .mermaid .node ellipse,

@@ -13,7 +13,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
  Create as many sidebars as you want.
  */
 const sidebars: SidebarsConfig = {
-  // Teams for Linux documentation sidebar
+  // Outlook for Linux documentation sidebar
   docsSidebar: [
     'index',
     'quick-reference',
@@ -35,9 +35,6 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'User Guide',
       items: [
-        'screen-sharing',
-        'custom-backgrounds',
-        'mqtt-integration',
         'certificate',
         'troubleshooting',
       ],
@@ -62,7 +59,6 @@ const sidebars: SidebarsConfig = {
           label: 'Architecture',
           items: [
             'development/module-index',
-            'development/token-cache-architecture',
             'development/security-architecture',
           ],
         },
@@ -71,25 +67,12 @@ const sidebars: SidebarsConfig = {
           label: 'Architecture Decisions',
           items: [
             'development/adr/README',
-            'development/adr/001-desktopcapturer-source-id-format',
-            'development/adr/002-token-cache-secure-storage',
-            'development/adr/003-token-refresh-implementation',
             'development/adr/004-agents-md-standard-investigation',
-            'development/adr/005-ai-powered-changelog-generation',
             'development/adr/006-cli-argument-parsing-library',
-            'development/adr/007-embedded-mqtt-broker',
-            'development/adr/008-usesystempicker-electron-38',
             'development/adr/009-automated-testing-strategy',
-            'development/adr/010-multiple-windows-support',
             'development/adr/011-appimage-update-info',
             'development/adr/012-intune-sso-broker-compatibility',
             'development/adr/013-pii-log-sanitization',
-            'development/adr/014-quick-chat-deep-link-approach',
-            'development/adr/015-quick-chat-inline-messaging',
-            'development/adr/016-cross-distro-testing-environment',
-            'development/adr/017-workflow-run-pr-comments',
-            'development/adr/018-issue-triage-bot-github-app-migration',
-            'development/adr/019-repo-activity-dashboard',
             'development/adr/020-multi-account-profile-switcher',
             'development/adr/021-webauthn-fido2-linux',
             'development/adr/022-custom-notification-toast-scope',
@@ -99,7 +82,6 @@ const sidebars: SidebarsConfig = {
             'development/adr/026-performance-audit-outcomes',
             'development/adr/028-third-party-idp-otc-prefill',
             'development/adr/029-config-schema-single-source-of-truth',
-            'development/adr/030-graph-api-teams-session-token',
             'development/adr/031-ozone-platform-x11-default',
           ],
         },
