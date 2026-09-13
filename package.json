@@ -2,6 +2,7 @@
   "name": "outlook-for-linux",
   "version": "2.0.0",
   "main": "app/index.js",
+  "desktopName": "outlook-for-linux.desktop",
   "description": "Unofficial client for Microsoft Outlook for Linux",
   "homepage": "https://github.com/Taylor8484/outlook-for-linux",
   "keywords": [
@@ -88,6 +89,7 @@
       "category": "Network;Office;Email",
       "packageCategory": "net",
       "executableName": "outlook-for-linux",
+      "syncDesktopName": true,
       "synopsis": "Outlook for Linux",
       "description": "Unofficial Microsoft Outlook client for Linux using Electron. It uses the Web App and wraps it as a standalone application using Electron.",
       "executableArgs": [
