@@ -15,6 +15,20 @@
   <url type="bugtracker">https://github.com/Taylor8484/outlook-for-linux/issues</url>
   <launchable type="desktop-id">io.github.taylor8484.outlook_for_linux.desktop</launchable>
   <releases>
+    <release version="2.2.0" date="2026-09-13">
+      <description>
+        <ul>
+          <li>open mailto: links in an Outlook compose window</li>
+          <li>fail passkey prompts fast when security key support is off</li>
+          <li>set desktopName so desktops match the window to its launcher</li>
+          <li>set the package author email required for deb and rpm builds</li>
+          <li>keep release-please green when no release PR is opened</li>
+          <li>bootstrap release-please at the 2.0.0 re-fork</li>
+          <li>develop-outlook: release 2.1.0 (#1)</li>
+          <li>develop-outlook: release 2.1.1 (#2)</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.1.1" date="2026-09-13">
       <description>
         <ul>

@@ -26,6 +26,10 @@
 * **develop-outlook:** release 2.1.0 ([#1](https://github.com/Taylor8484/outlook-for-linux/issues/1)) ([fdf25f1](https://github.com/Taylor8484/outlook-for-linux/commit/fdf25f18254348309c6ddadc7096ed881441ffb3))
 * **develop-outlook:** release 2.1.1 ([#2](https://github.com/Taylor8484/outlook-for-linux/issues/2)) ([807860f](https://github.com/Taylor8484/outlook-for-linux/commit/807860f2900c1aee56b464d40dafcac2aec1d512))
 
+### Thanks
+
+Big thanks to @app/github-actions for contributing to this release.
+
 ## [2.1.1](https://github.com/Taylor8484/outlook-for-linux/compare/v2.1.0...v2.1.1) (2026-09-13)
 
 
